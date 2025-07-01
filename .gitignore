@@ -1,5 +1,4 @@
 *.npy
 *.env
-requirements.txt
 .venv/
 logs/

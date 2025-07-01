@@ -1,0 +1,8 @@
+langchain-upstage
+langchain-core
+langchain-community
+langchain
+python-dotenv
+pandas
+numpy
+ipykernel
