@@ -1,7 +1,7 @@
 from langchain_upstage import ChatUpstage
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
-from langchain.memory import ChatMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
 from dotenv import load_dotenv
 from utils.system_prompt import SYSTEM_PROMPT
 import os
