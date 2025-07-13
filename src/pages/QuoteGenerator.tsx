@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout/Layout";
 import ChatBubble from "../components/Chat/ChatBubble";
 import ChatInput from "../components/Chat/ChatInput";
@@ -41,6 +42,7 @@ interface QuoteGeneratorProps {
 const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
   const { chatState, sendMessage, confirmQuote, rejectQuote } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // 새 메시지가 추가될 때마다 스크롤을 아래로
   useEffect(() => {
@@ -53,9 +55,9 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
 
   const handleConfirm = () => {
     confirmQuote();
-    // 로딩이 끝나면 완료 페이지로 이동
+    // 로딩이 끝나면 결과 페이지로 이동
     setTimeout(() => {
-      onComplete?.();
+      navigate("/result");
     }, 3000);
   };
 
@@ -64,7 +66,11 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
   };
 
   const shouldShowConfirmButtons = () => {
-    return chatState.selectedQuote && chatState.currentStep >= 4 && !chatState.isLoading;
+    return (
+      chatState.selectedQuote &&
+      chatState.currentStep >= 4 &&
+      !chatState.isLoading
+    );
   };
 
   const shouldShowInput = () => {
@@ -73,7 +79,8 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
 
   const getLastQuoteMessage = () => {
     const quoteMessages = chatState.messages.filter(
-      (msg) => msg.isBot && (msg.content.includes('"') || msg.content.includes("—")),
+      (msg) =>
+        msg.isBot && (msg.content.includes('"') || msg.content.includes("—"))
     );
     return quoteMessages[quoteMessages.length - 1];
   };
@@ -85,10 +92,13 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
           <MessageList>
             {chatState.messages.map((message) => {
               const isQuoteMessage =
-                message.isBot && (message.content.includes('"') || message.content.includes("—"));
+                message.isBot &&
+                (message.content.includes('"') ||
+                  message.content.includes("—"));
 
               // 빈 content이고 봇 메시지면 로딩 애니메이션 표시
-              const isLoadingMessage = message.isBot && message.content.trim() === "";
+              const isLoadingMessage =
+                message.isBot && message.content.trim() === "";
 
               return (
                 <ChatBubble
@@ -139,8 +149,8 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
         {/* 로딩 오버레이 */}
         <LoadingOverlay
           isVisible={chatState.isLoading && chatState.currentStep >= 4}
-          message="출력용 이미지를"
-          subMessage="생성하는 중입니다."
+          message="당신만을 위한 명언을"
+          subMessage="준비하고 있습니다."
         />
       </ChatContainer>
     </Layout>

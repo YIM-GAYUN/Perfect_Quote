@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { createGlobalStyle } from "styled-components";
 import { globalStyles } from "./styles/theme";
 import QuoteGenerator from "./pages/QuoteGenerator";
+import QuoteResult from "./pages/QuoteResult";
 import About from "./pages/About";
 import Ideas from "./pages/Ideas";
 import Support from "./pages/Support";
@@ -17,6 +18,7 @@ const App: React.FC = () => {
       <GlobalStyle />
       <Routes>
         <Route path="/" element={<QuoteGenerator />} />
+        <Route path="/result" element={<QuoteResult />} />
         <Route path="/about" element={<About />} />
         <Route path="/ideas" element={<Ideas />} />
         <Route path="/support" element={<Support />} />

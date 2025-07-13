@@ -1,6 +1,7 @@
 import React from "react";
 import styled, { keyframes } from "styled-components";
 import { theme } from "../../styles/theme";
+import confirmationGif from "../../assets/confirmation-loading.gif";
 
 const fadeIn = keyframes`
   from {
@@ -8,15 +9,6 @@ const fadeIn = keyframes`
   }
   to {
     opacity: 1;
-  }
-`;
-
-const spin = keyframes`
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
   }
 `;
 
@@ -42,22 +34,25 @@ const LoadingContainer = styled.div`
   gap: ${theme.spacing.xl};
 `;
 
-const SpinnerContainer = styled.div`
-  width: 118px;
-  height: 117px;
+const AnimationContainer = styled.div`
+  width: 200px;
+  height: 200px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    width: 150px;
+    height: 150px;
+  }
 `;
 
-const Spinner = styled.div`
-  width: 80px;
-  height: 80px;
-  border: 4px solid ${theme.colors.background.light};
-  border-top: 4px solid ${theme.colors.primary};
-  border-radius: 50%;
-  animation: ${spin} 1s linear infinite;
+const GifAnimation = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 16px;
 `;
 
 const LoadingText = styled.div`
@@ -96,17 +91,17 @@ interface LoadingOverlayProps {
 
 const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   isVisible,
-  message = "출력용 이미지를",
-  subMessage = "생성하는 중입니다.",
+  message = "당신만을 위한 명언을",
+  subMessage = "준비하고 있습니다.",
 }) => {
   if (!isVisible) return null;
 
   return (
     <Overlay>
       <LoadingContainer>
-        <SpinnerContainer>
-          <Spinner />
-        </SpinnerContainer>
+        <AnimationContainer>
+          <GifAnimation src={confirmationGif} alt="명언 준비 중" />
+        </AnimationContainer>
 
         <LoadingText>
           <MainText>
