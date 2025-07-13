@@ -1,6 +1,6 @@
-# Quote Generator V2
+# Perfect Quote Generator V2
 
-사용자의 사연을 듣고 맞춤형 명언을 생성하는 대화형 웹 애플리케이션입니다.
+사용자의 사연을 듣고 맞춤형 명언을 생성하는 대화형 웹 애플리케이션과 챗봇 시스템입니다.
 
 ## 🚀 새로운 기능
 
@@ -9,30 +9,80 @@
 - **스트리밍 지원**: 토큰 단위 실시간 응답 (Server-Sent Events)
 - **에러 처리**: 네트워크 오류 시 자동 폴백
 - **개발 모드**: API 서버 없이도 모의 응답 제공
+- **Upstage API 연동**: 실제 AI 모델을 통한 대화 생성
+- **멀티턴 그래프**: LangGraph를 통한 멀티턴 대화 관리
 
-## 📋 API 구조
+## 📋 프로젝트 구조
+
+### 웹 애플리케이션 (Frontend)
+
+- React 19 + TypeScript 기반
+- 대화형 채팅 인터페이스
+- 실시간 API 통신
+
+### 챗봇 시스템 (Backend)
+
+- Python 기반 챗봇 클래스
+- Upstage API 연동
+- LangGraph를 통한 상태 관리
+
+## 🛠 설치 및 실행
+
+### 1. 환경 설정
+
+```bash
+# Python 가상환경 생성 및 활성화
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# 또는
+.venv\Scripts\activate  # Windows
+
+# Python 패키지 설치
+pip install -r requirements.txt
+
+# Node.js 의존성 설치
+npm install
+```
+
+### 2. 환경 변수 설정
+
+프로젝트 루트에 `.env` 파일을 생성:
+
+```bash
+# Upstage API 설정
+UPSTAGE_API_KEY=your_upstage_api_key_here
+
+# 웹 애플리케이션 설정
+REACT_APP_API_BASE_URL=http://localhost:3001/api
+REACT_APP_ENABLE_STREAMING=true
+REACT_APP_DEV_MODE=true
+```
+
+### 3. 개발 서버 실행
+
+#### 옵션 A: 전체 시스템 실행
+
+```bash
+# 1. Flask 서버 실행 (터미널 1)
+python app.py
+
+# 2. React 앱 실행 (터미널 2)
+npm start
+```
+
+#### 옵션 B: 모의 API 서버와 함께 실행
+
+```bash
+npm run dev
+```
+
+## 📝 API 구조
 
 ### 1. 메시지 전송 (POST)
 
 ```
 POST /api/chat/send
 ```
-
-### 2. 상태 확인 (GET)
-
-```
-GET /api/chat/status?userId={userId}&threadNum={threadNum}
-```
-
-### 3. 스트리밍 (Server-Sent Events)
-
-```
-GET /api/chat/stream?userId={userId}&threadNum={threadNum}
-```
-
-## 📝 API 설명
-
-### 메시지 전송 API
 
 **요청 형식:**
 
@@ -63,89 +113,60 @@ GET /api/chat/stream?userId={userId}&threadNum={threadNum}
 }
 ```
 
-### 동작 방식
+### 2. 상태 확인 (GET)
 
-1. **메시지 전송**: 사용자가 메시지를 보내면 `POST /api/chat/send`로 전송
-2. **상태 확인**: `pending` 응답 시 `GET /api/chat/status`로 폴링 시작
-3. **완료 처리**: `completed` 상태에서 봇 응답과 명언을 함께 수신
-4. **4단계 대화**: 4번의 메시지 교환 후 맞춤형 명언 생성
-
-### 스트리밍 모드
-
-Server-Sent Events를 통해 실시간 토큰 단위 응답:
-
-```json
-{
-  "type": "content", // "content" | "quote" | "complete"
-  "data": "우선, 괜찮으세요?",
-  "timestamp": "2024-01-15T10:30:05.000Z"
-}
+```
+GET /api/chat/status?userId={userId}&threadNum={threadNum}
 ```
 
-## 🛠 설치 및 실행
+### 3. 스트리밍 (Server-Sent Events)
 
-### 1. 의존성 설치
-
-```bash
-npm install
+```
+GET /api/chat/stream?userId={userId}&threadNum={threadNum}
 ```
 
-### 2. 환경 변수 설정
+## 🤖 챗봇 시스템
 
-프로젝트 루트에 `.env` 파일을 생성:
+### 클래스 기반 사용법
 
-```bash
-# API 서버 설정
-REACT_APP_API_BASE_URL=http://localhost:3001/api
+```python
+from utils.chatbot_utils import Chatbot
 
-# 스트리밍 기능 활성화
-REACT_APP_ENABLE_STREAMING=true
+# 챗봇 인스턴스 생성
+chatbot = Chatbot(
+    model="solar-pro",
+    temperature=0.7,
+    max_tokens=512
+)
 
-# 개발 모드
-REACT_APP_DEV_MODE=true
+# 대화 시작
+response = chatbot.chat_once("안녕하세요!")
+print(response)
+
+# 대화 히스토리 확인
+chatbot.show_history()
+
+# CSV로 저장
+chatbot.save_chat_history_to_csv("chat_log.csv")
 ```
 
-### 3. 개발 서버 실행
+### 멀티턴 그래프 시스템
 
-#### 옵션 A: 모의 API 서버와 함께 실행 (권장)
+LangGraph를 사용한 상태 관리:
 
-```bash
-npm run dev
+```python
+# graph.ipynb 참조
+class ChatbotState(TypedDict):
+    user_id: str
+    thread_num: str
+    user_message: str
+    chatbot_message: str
+    timestamp: str
+    chat_history: ChatMessageHistory
+    status: str
+    quote: str
+    author: str
 ```
-
-이 명령어는 모의 API 서버 (포트 3001)와 React 앱 (포트 3000)을 동시에 실행합니다.
-
-#### 옵션 B: React 앱만 실행
-
-```bash
-npm start
-```
-
-API 서버가 없으면 개발 모드에서 모의 응답을 제공합니다.
-
-#### 옵션 C: 모의 API 서버만 실행
-
-```bash
-npm run mock-server
-```
-
-## 🔧 API 모드 설정
-
-### 폴링 모드 (기본)
-
-```bash
-REACT_APP_ENABLE_STREAMING=false
-```
-
-3초마다 서버에 상태를 확인하는 폴링 방식
-
-### 스트리밍 모드
-
-```bash
-REACT_APP_ENABLE_STREAMING=true
-```
-
-실시간으로 토큰 단위 응답을 받는 스트리밍 방식
 
 ## 📁 프로젝트 구조
 
@@ -165,6 +186,17 @@ src/
 │   └── index.ts                 # TypeScript 타입 정의
 └── pages/
     └── QuoteGenerator.tsx       # 메인 채팅 페이지
+
+utils/
+├── chatbot_utils.py             # 챗봇 클래스
+├── system_prompt.py             # 시스템 프롬프트
+├── summarize_prompt.py          # 요약 프롬프트
+└── __init__.py
+
+notebooks/
+├── graph.ipynb                  # LangGraph 구현
+├── chatbot_conversation.ipynb   # 대화 테스트
+└── chatbot_example.ipynb        # 예제 코드
 ```
 
 ## 🔍 API 테스트
@@ -201,27 +233,46 @@ curl "http://localhost:3001/api/chat/status?userId=test_user&threadNum=test_thre
 - **에러 복구**: API 오류 시 개발 모드에서 모의 응답 제공
 - **반응형 UI**: 모바일 친화적인 디자인
 - **타입 안전**: TypeScript로 완전한 타입 정의
+- **대화 히스토리 관리**: ChatMessageHistory를 통한 대화 기록
+- **CSV 로깅**: 대화 내용 자동 저장 및 통계 기능
 
 ## 🔧 실제 API 서버 연동
 
 모의 서버 대신 실제 API 서버를 사용하려면:
 
-1. `.env` 파일의 `REACT_APP_API_BASE_URL` 수정
-2. 실제 서버에서 동일한 API 엔드포인트 구현
+1. `.env` 파일의 `UPSTAGE_API_KEY` 설정
+2. Flask 서버에서 실제 Upstage API 사용
 3. 자세한 API 명세는 `API_GUIDE.md` 참조
 
 ## 📚 추가 문서
 
 - [API_GUIDE.md](./API_GUIDE.md) - 상세한 API 명세서
+- [API_SPECIFICATION.md](./API_SPECIFICATION.md) - API 규격 문서
 - [mock-server.js](./mock-server.js) - 모의 서버 구현 예시
 
 ## 🛠 기술 스택
 
-- **Frontend**: React 19, TypeScript, Styled Components
-- **API 통신**: Fetch API, Server-Sent Events
-- **상태 관리**: React Hooks (useState, useCallback, useEffect)
-- **개발 도구**: 모의 API 서버 (Express.js)
+### Frontend
 
-## �� 라이선스
+- React 19, TypeScript
+- Styled Components
+- Fetch API, Server-Sent Events
+- React Hooks (useState, useCallback, useEffect)
+
+### Backend & AI
+
+- Python 3.8+
+- LangChain & LangGraph
+- Upstage API (Solar-Pro)
+- Flask (API 서버)
+- ChatMessageHistory (대화 관리)
+
+### Development Tools
+
+- 모의 API 서버 (Express.js)
+- Jupyter Notebook (개발 및 테스트)
+- CSV 로깅 시스템
+
+## 📄 라이선스
 
 MIT License
