@@ -1,5 +1,5 @@
 
-import bgImg from "../assets/figma_design_system/bg_img.png";
+
 import React from "react";
 import styled from "styled-components";
 import Layout from "../components/Layout/Layout";
@@ -15,25 +15,8 @@ const BgContainer = styled.div`
   flex-direction: column;
   align-items: flex-start;
   padding: 0;
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 120vw;
-    height: 140%;
-    background: url(${bgImg}) center center no-repeat;
-    background-size: 40%;
-    opacity: 0.1;
-    z-index: 0;
-    pointer-events: none;
-  }
-  > * {
-    position: relative;
-    z-index: 1;
-  }
+  background: #fff;
 `;
-
 
 
 const Description = styled.div`

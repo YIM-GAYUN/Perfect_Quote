@@ -131,7 +131,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = "quote-generator" }) => {
   const handleNavClick = (path: string) => {
     navigate(path);
   };
-
+// (중복된 navigationItems 제거)
   const isCurrentPath = (path: string) => {
     if (path === "/" && location.pathname === "/") return true;
     if (path !== "/" && location.pathname.startsWith(path)) return true;
@@ -160,7 +160,6 @@ const Header: React.FC<HeaderProps> = ({ currentPage = "quote-generator" }) => {
   return (
     <HeaderContainer>
       <LogoSection onClick={handleLogoClick}>
-        <LogoIcon src={logoMain} alt="딱 맞는 말 로고" />
         <LogoText src={logoText} alt="딱 맞는 말" />
       </LogoSection>
 
@@ -169,7 +168,11 @@ const Header: React.FC<HeaderProps> = ({ currentPage = "quote-generator" }) => {
           item.isDropdown ? (
             <div key={item.path} style={{ position: "relative" }} ref={dropdownRef}>
               <NavItem
-                $isActive={isCurrentPath(item.path)}
+                $isActive={
+                  item.label === '아이디어'
+                    ? isCurrentPath(item.path) || currentPage === 'design-system' || currentPage === 'persona'
+                    : isCurrentPath(item.path)
+                }
                 onClick={() => setDropdownOpen((open) => !open)}
                 aria-haspopup="true"
                 aria-expanded={dropdownOpen}
