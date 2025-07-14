@@ -44,100 +44,91 @@ const MainSection = styled.section`
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  width: 1200px;
-  max-width: 1200px;
-  height: 75vh;
-  min-height: 500px;
-  margin: 0 auto;
-  margin-top: 120px;
-  @media (max-width: 1300px) {
-    width: 100vw;
-    max-width: 100vw;
-    flex-direction: column;
-    height: auto;
-    min-height: unset;
-    margin-top: 60px;
-  }
+  width: 1600px;
+  height: 800px;
+  position: absolute;
+  top: 200px;
+  left: 160px;
+  margin: 0;
 `;
 
 const DescSection = styled.div`
-  width: 1200px;
-  max-width: 1200px;
-  margin: 0 auto;
-  margin-top: 32px;
+  width: 1600px;
+  position: absolute;
+  left: 160px;
+  bottom: 100px;
   display: flex;
   text-align: justify;
   align-items: flex-end;
-  @media (max-width: 1300px) {
-    width: 100vw;
-    max-width: 100vw;
-  }
+  margin: 0;
 `;
 
 const LeftCol = styled.div`
-  flex: 1 1 0;
+  width: 400px;
+  min-width: 500px;
+  max-width: 800px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
-  margin-top: 40px;
-  margin-left: -180px;
+  row-gap: 10px;
+  margin-top: 0;
+  margin-left: 0;
 `;
 
 const BlueBorder_logo = styled.div`
   position: relative;
-  margin: 5px;
-  padding: 120px;
-  top: 0; left: 0; right: 0; bottom: 0;
+  padding: 60px 20px 40px 20px;
+  width: 800px;
+  height: 430px;
   border: 3px solid ${theme.colors.primary};
   pointer-events: auto;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0;
+  justify-content: flex-start;
   background: transparent;
   border-top-left-radius: 30px;
   border-top-right-radius: 30px;
   border-bottom-right-radius: 30px;
   border-bottom-left-radius: 0;
-  margin-top: 30px;
+  margin-top: 20px;
 `;
 
 const BlueBorder_color = styled.div`
   position: relative;
-  padding: 20px;
-  top: 0; left: 0; right: 0; bottom: 0;
+  padding: 20px 10px 20px 10px;
+  width: 320px;
+  height: 120px;
   border: 3px solid ${theme.colors.primary};
   pointer-events: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
   background: transparent;
   border-top-left-radius: 30px;
   border-top-right-radius: 30px;
   border-bottom-right-radius: 30px;
   border-bottom-left-radius: 0;
-  margin-bottom: 200px;
+  margin-bottom: 40px;
+  background-color: #fff;
 `;
 
-const BlueBorder = styled.div`
+const BlueBorder_ty = styled.div`
   position: relative;
-  padding: -10px;
-  padding-top: -30px;
-  padding-bottom: -30px;
-  top: 0; left: 0; right: 0; bottom: 0;
+  padding: 20px 10px 20px 10px;
+  width: 1000px;
+  height: 150px;
   border: 3px solid ${theme.colors.primary};
   pointer-events: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
   background: transparent;
   border-top-left-radius: 30px;
   border-top-right-radius: 30px;
   border-bottom-right-radius: 30px;
   border-bottom-left-radius: 0;
+  background-color: #fff;
 `;
 
 const Box = styled.div<{ bgColor: string }>`
@@ -148,45 +139,45 @@ const Box = styled.div<{ bgColor: string }>`
 
 const LogoTextOverlay = styled.div`
   position: absolute;
-  top: 50%;
-  left: 66%;
+  top: 65%;
+  left: 40%;
   transform: translate(-50%, -50%);
   color: #fff;
   font-family: ${theme.fonts.korean.bold};
-  font-size: 35px;
+  font-size: 28px;
   font-weight: 550;
   text-shadow: 0 2px 16px rgba(0,0,0,0.18);
   text-align: left;
   line-height: 1.1;
-  width: 100%;
-  max-width: 300px;
+  width: 180px;
+  max-width: 180px;
 `;
 
 const Desc = styled.div`
-  margin-top: 20px;
   font-family: ${theme.fonts.korean.title};
-  font-size: 22px;
+  font-size: 24px;
   color: #4A4E57;
   line-height: 1.5;
   text-align: justify;
-  max-width: 1000px;
-  margin-left: -180px;
+  max-width: 1400px;
+  margin-left: 0;
 `;
 
 const RightCol = styled.div`
-  flex: 1 1 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
+  width: 400px;
   min-width: 500px;
-  max-width: 500px;
-  gap: 5px;
-  margin-top: 40px;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  row-gap: 20px;
+  margin-top: 0;
+  margin-left: 450px;
 `;
 
-const LogoShapeBox = styled.div`
-
+const Logo_ShapeBox = styled.div`
+  width: 320px;
   height: 120px;
   display: flex;
   flex-direction: column;
@@ -195,8 +186,8 @@ const LogoShapeBox = styled.div`
   position: relative;
 `;
 
-const ShapeBox = styled.div`
-
+const Color_ShapeBox = styled.div`
+  width: 320px;
   height: 120px;
   display: flex;
   flex-direction: column;
@@ -205,19 +196,21 @@ const ShapeBox = styled.div`
   position: relative;
 `;
 
-const ShapeBox_Ty = styled.div`
+const Ty_ShapeBox = styled.div`
+  width: 320px;
   height: 120px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
   position: relative;
-  margin-top: -120px;
+  margin-top: -30px;
 `;
 
 const ShapeImg = styled.img`
-  top: 20vh;
-  height: 7vh;
+  position: relative;
+  top: 20px;
+  height: 80px;
   object-fit: contain;
 `;
 
@@ -230,50 +223,50 @@ const DesignSystem: React.FC = () => {
         <MainBgImg />
         <MainSection>
           <LeftCol>
-            <LogoShapeBox>
+            <Logo_ShapeBox>
               <ShapeImg src={logoShape} alt="Logo 도형" />
               <LogoTextOverlay>
                 Logo
               </LogoTextOverlay>
-            </LogoShapeBox>
+            </Logo_ShapeBox>
             <BlueBorder_logo style={{ flexDirection: "column", alignItems: "center" }}>
-              <div style={{ display: "flex", flexDirection: "row", gap: 0 }}>
-                <img src={img1} alt="로고1" style={{ width: "130px", height: "130px", objectFit: "contain", margin: "20px" }} />
-                <img src={img2} alt="로고2" style={{ width: "130px", height: "130px", objectFit: "contain", margin: "20px"}} />
-                <img src={img3} alt="로고3" style={{ width: "130px", height: "130px", objectFit: "contain", margin: "20px" }} />
+              <div style={{ display: "flex", flexDirection: "row", columnGap: "10px" }}>
+                <img src={img1} alt="로고1" style={{ width: "140px", height: "140px", objectFit: "contain", margin: "10px" }} />
+                <img src={img2} alt="로고2" style={{ width: "140px", height: "140px", objectFit: "contain", margin: "10px"}} />
+                <img src={img3} alt="로고3" style={{ width: "140px", height: "140px", objectFit: "contain", margin: "10px" }} />
               </div>
-              <img src={mainImg} alt="로고" style={{ width: "500px", height: "200px", objectFit: "contain", marginTop: "8px" }} />
+              <img src={mainImg} alt="로고" style={{ width: "450px", height: "160px", objectFit: "contain", marginTop: "12px" }} />
             </BlueBorder_logo>
           </LeftCol>
           <RightCol>
             {/* Color 그룹 */}
-            <ShapeBox>
+            <Color_ShapeBox>
               <ShapeImg src={colorShape} alt="Color 도형" />
               <LogoTextOverlay>
                 Color
               </LogoTextOverlay>
-            </ShapeBox>
+            </Color_ShapeBox>
             <BlueBorder_color>
               <Box bgColor={theme.colors.primary} />
               <Box bgColor="#00000098"  />
               <Box bgColor="#90909098" />
             </BlueBorder_color>
             {/* Typography 그룹 */}
-            <ShapeBox_Ty>
+            <Ty_ShapeBox>
               <ShapeImg src={typographyShape} alt="Typography 도형" />
               <LogoTextOverlay>
                 Typography
               </LogoTextOverlay>
-            </ShapeBox_Ty>
-            <BlueBorder>
-              <img src={fonts} alt="fonts" style={{ width: "700px", height: "230px", objectFit: "contain" }} />
-            </BlueBorder>
+            </Ty_ShapeBox>
+            <BlueBorder_ty>
+              <img src={fonts} alt="fonts" style={{ width: "700px", height: "200px", objectFit: "contain" }} />
+            </BlueBorder_ty>
           </RightCol>
         </MainSection>
         <DescSection>
           <Desc>
-            딱 맞는 말의 아이콘은 큰 따옴표에서 영감을 얻은 것으로,<br />
-            블럭들이 딱 붙어서 딱 맞는 말이라는 브랜드명의 이미지에 맞게 디자인되었습니다.
+            딱 맞는 말의 아이콘은 큰 따옴표에서 영감을 얻은 것으로, 블럭들이 딱 붙어서 딱 맞는 말이라는 <br />
+            브랜드명의 이미지에 맞게 디자인되었습니다.
           </Desc>
         </DescSection>
       </BgContainer>

@@ -1,99 +1,83 @@
-
-
 import React from "react";
 import styled from "styled-components";
-import Layout from "../components/Layout/Layout";
+import Header from "../components/Layout/Header";
 import { theme } from "../styles/theme";
+import bgImg from "../assets/figma_design_system/bg_img.png";
 import profileBg from "../assets/figma_design_system/persona_profile_bg.png";
 import profilePhoto from "../assets/figma_design_system/persona_profile_photo.png";
 
 const BgContainer = styled.div`
-  min-height: calc(100vh - 130px);
+  min-height: 100vh;
   width: 100vw;
+  background: #fff;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 0;
-  background: #fff;
+  overflow-x: hidden;
 `;
 
-
-const Description = styled.div`
-  font-family: 'Freesentation', 'Pretendard', sans-serif;
-  font-size: 24px;
-  color: #4A4E57;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.15);
-  padding: 32px 56px;
-  max-width: 1137px;
-  margin: 56px auto 40px auto;
-  text-align: left;
-  line-height: 1.5;
+const MainBgImg = styled.div`
+  position: absolute;
+  top: 22vh;
+  width: 120vw;
+  height: 120vh;
+  left: 15vw;
+  background: url(${bgImg}) center center no-repeat;
+  background-size: contain;
+  opacity: 0.08;
+  z-index: 0;
 `;
 
-const PersonaSection = styled.div`
+const MainSection = styled.section`
   display: flex;
   flex-direction: row;
-  gap: 64px;
-  margin-bottom: 0;
-  align-items: flex-start;
-  justify-content: center;
-  width: 100%;
+  align-items: stretch;
+  width: 1200px;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-top: 80px;
+  position: relative;
+  z-index: 1;
+  margin-top: 10%;
 `;
 
-const ProfileCard = styled.div`
-  width: 498px;
-  height: 900px;
-  background: #4A4E57;
-  border-radius: 30px;
-  box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.10);
-  padding: 48px 32px 32px 32px;
+const LeftCol = styled.div`
+  flex: 0 0 500px;
+  max-width: 500px;
+  min-width: 320px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 0;
-  justify-content: center;
-`;
-
-const ProfileBg = styled.div`
-  width: 160px;
-  height: 160px;
   background: url(${profileBg}) no-repeat center/cover;
   border-radius: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 24px;
-  margin-top: 100px;
+  box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.10);
+  padding: 40px 24px 32px 24px;
+  margin-right: 60px;
+  margin-left: -300px;
+  height: 800px;
 `;
 
 const ProfilePhoto = styled.img`
-  width: 300px;
+  width: 320px;
   height: 400px;
   border-radius: 15px;
   object-fit: cover;
-  border: 4px solid #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 `;
 
 const Name = styled.div`
-  font-family: 'Freesentation', 'Pretendard', sans-serif;
-  font-weight: 700;
-  font-size: 36px;
+  font-family: ${theme.fonts.korean.bold};
+  font-size: 32px;
   color: #fff;
-  margin-top: 100px;
+  margin-top: 24px;
   margin-bottom: 8px;
-  text-shadow: 0 1px 4px rgba(180, 153, 153, 0.1);
+  text-align: center;
 `;
 
 const AgeGender = styled.div`
-  font-family: 'Freesentation', 'Pretendard', sans-serif;
-  font-weight: 500;
-  font-size: 24px;
-  color: #C4C5D2;
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 20px;
+  color: #b1b1b1ff;
   margin-bottom: 16px;
+  text-align: center;
 `;
 
 const InfoList = styled.div`
@@ -104,76 +88,107 @@ const InfoList = styled.div`
 const InfoRow = styled.div`
   display: flex;
   margin-bottom: 12px;
-`;
-
-const InfoLabel = styled.div`
-  font-family: 'Freesentation', 'Pretendard', sans-serif;
-  font-weight: 700;
-  font-size: 24px;
-  color: #C4C5D2;
-  width: 84px;
-`;
-
-const InfoValue = styled.div`
-  font-family: 'Freesentation', 'Pretendard', sans-serif;
-  font-weight: 500;
-  font-size: 24px;
-  color: #C4C5D2;
   margin-left: 40px;
 `;
 
-const SpeechBubbles = styled.div`
+const InfoLabel = styled.div`
+  font-family: ${theme.fonts.korean.bold};
+  font-size: 18px;
+  color: #aeaeaeff;
+  width: 80px;
+`;
+
+const InfoValue = styled.div`
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 18px;
+  color: #c1c1c1ff;
+  margin-left: 16px;
+`;
+
+const RightCol = styled.div`
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  position: relative;
+  width: 100%;
+  max-width: 2500px;
+  margin-left: 60px;
+  margin-right: -300px;
+`;
+
+const Desc = styled.div`
+  font-family: ${theme.fonts.korean.title};
+  font-size: 20px;
+  color: #676767ff;
+  margin-bottom: 32px;
+  margin-top: 0;
+  text-align: left;
+  line-height: 1.5;
+  max-width: 2000px;
+  margin-left: 10px;
+`;
+
+const BigBubble = styled.div`
+  background: #fff;
+  border: 3px solid #6490FF;
+  border-radius: 40px 40px 40px 0px;
+  box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.10);
   display: flex;
   flex-direction: column;
   gap: 32px;
-  flex: 1;
-  margin-top: 8px;
-  align-items: center;
+  width: 100%;
+  min-width: 600px;
+  max-width: 1200px;
+  margin: 15px 5px 15px 5px;
+  padding: 5px 32px 5px 0;
 `;
 
-const Bubble = styled.div<{ color: string }>`
-  background: ${props => props.color};
-  border-radius: 40px 40px 40px 0px;
-  border: 3px solid #6490FF;
-  box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.10);
-  padding: 36px 56px;
-  min-width: 700px;
-  max-width: 1088px;
+const RowBubble = styled.div`
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+  min-height: 5px;
+  margin-left: -2px;
+  padding: 5px 10px 5px 10px;
 `;
 
-const BubbleTitle = styled.div`
-  font-family: 'Freesentation', 'Pretendard', sans-serif;
-  font-weight: 600;
-  font-size: 32px;
+const BlueBubble = styled.div`
+  background: #6490FF;
   color: #fff;
-  margin-bottom: 16px;
-  letter-spacing: 0.5px;
+  border-radius: 80px 80px 80px 0px;
+  min-width: 115px;
+  max-width: 145px;
+  padding: 16px 20px;
+  font-family: ${theme.fonts.korean.bold};
+  font-size: 20px;
+  text-align: center;
+  margin-right: 24px;
+  margin-left: -10px;
+  margin-top: -10px;
+  box-shadow: 0px 0px 8px 0px rgba(0,0,0,0.08);
 `;
 
 const BubbleText = styled.div`
-  font-family: 'Freesentation', 'Pretendard', sans-serif;
-  font-weight: 500;
-  font-size: 24px;
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 19px;
   color: #4A4E57;
-  white-space: pre-line;
+  background: transparent;
+  margin: 0;
+  padding: 13px;
   line-height: 1.6;
+  white-space: pre-line;
 `;
 
 const Persona: React.FC = () => {
   return (
-    <Layout currentPage="persona">
+    <>
+      <Header currentPage="persona" />
       <BgContainer>
-        <Description>
-          딱 맞는 말의 페르소나는 위로를 필요로하는 지친 현대인으로 구성되었으며,  AI챗봇을 사용해 위로를 얻고자 하는 니즈가 있습니다
-        </Description>
-        <PersonaSection>
-          <ProfileCard>
-            <ProfileBg>
+        <MainBgImg />
+        <MainSection>
+          <LeftCol>
               <ProfilePhoto src={profilePhoto} alt="프로필" />
-            </ProfileBg>
             <Name>이가영</Name>
             <AgeGender>22세, 여성</AgeGender>
             <InfoList>
@@ -190,38 +205,49 @@ const Persona: React.FC = () => {
                 <InfoValue>부모님, 여동생과 함께 거주</InfoValue>
               </InfoRow>
             </InfoList>
-          </ProfileCard>
-          <SpeechBubbles>
-            <Bubble color="#6490FF">
-              <BubbleTitle>성격</BubbleTitle>
-              <BubbleText>내향적임, 기술과 트렌드에 관심이 많음</BubbleText>
-            </Bubble>
-            <Bubble color="#6490FF">
-              <BubbleTitle>상태</BubbleTitle>
-              <BubbleText>{`AI학과에 진학했으나, 전공 선택이 나에게 맞는지 확신이 없음
+          </LeftCol>
+          <RightCol>
+            <Desc>
+              딱 맞는 말의 페르소나는 위로를 필요로하는 지친 현대인으로 구성되었으며, AI챗봇을 사용해 위로를 얻고자 하는 니즈가 있습니다
+            </Desc>
+            <BigBubble>
+              <RowBubble>
+                <BlueBubble>성격</BlueBubble>
+                <BubbleText>내향적임, 기술과 트렌드에 관심이 많음</BubbleText>
+              </RowBubble>
+            </BigBubble>
+            <BigBubble>
+              <RowBubble>
+                <BlueBubble>상태</BlueBubble>
+                <BubbleText>{`AI학과에 진학했으나, 전공 선택이 나에게 맞는지 확신이 없음
 주변 친구들은 빠르게 코딩 실력을 쌓고 프로젝트에 참여하는데, 본인은 아직 부족하다고 느껴 조급함
 AI의 미래에 대한 기대와 불안이 공존
 학업 스트레스와 진로 불안이 반복적으로 찾아옴
 부모님은 AI 분야의 전망을 긍정적으로 보지만, 본인은 자기 적성에 대한 의문이 많음`}</BubbleText>
-            </Bubble>
-            <Bubble color="#6490FF">
-              <BubbleTitle>목표</BubbleTitle>
-              <BubbleText>{`전공 공부에 대한 동기부여와 자신감 회복
+              </RowBubble>
+            </BigBubble>
+            <BigBubble>
+              <RowBubble>
+                <BlueBubble>목표</BlueBubble>
+                <BubbleText>{`전공 공부에 대한 동기부여와 자신감 회복
 진로 고민을 솔직하게 털어놓고, 비슷한 고민을 한 선배나 전문가의 조언이나 명언을 통해 위로받고 싶음
 자신의 감정과 성장 과정을 기록하고 싶음`}</BubbleText>
-            </Bubble>
-            <Bubble color="#6490FF">
-              <BubbleTitle>필요</BubbleTitle>
-              <BubbleText>{`AI, 진로, 성장, 도전 등과 관련된 명언 추천
+              </RowBubble>
+            </BigBubble>
+            <BigBubble>
+              <RowBubble>
+                <BlueBubble>필요</BlueBubble>
+                <BubbleText>{`AI, 진로, 성장, 도전 등과 관련된 명언 추천
 내 글을 바탕으로 한 공감 메시지와 실질적인 응원
 부담 없이 감정을 기록할 수 있는 익명성
 내가 남긴 기록을 다시 돌아보고, 성장의 흔적을 확인할 수 있는 기능
 복잡하지 않고 직관적인 서비스`}</BubbleText>
-            </Bubble>
-          </SpeechBubbles>
-        </PersonaSection>
+              </RowBubble>
+            </BigBubble>
+          </RightCol>
+        </MainSection>
       </BgContainer>
-    </Layout>
+    </>
   );
 };
 
