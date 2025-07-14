@@ -3,7 +3,6 @@ import React from "react";
 import styled from "styled-components";
 import Header from "../components/Layout/Header";
 import { theme } from "../styles/theme";
-// (logo_img1.png, logo_img2.png, logo_img3.png import는 현재 사용하지 않으므로 주석처리 또는 삭제)
 import img1 from "../assets/figma_design_system/logo_img1.png";
 import img2 from "../assets/figma_design_system/logo_img2.png";
 import img3 from "../assets/figma_design_system/logo_img3.png";
@@ -13,8 +12,6 @@ import colorShape from "../assets/figma_design_system/color_shape.png";
 import typographyShape from "../assets/figma_design_system/typography_shape.png";
 import bgImg from "../assets/figma_design_system/bg_img.png";
 import fonts from "../assets/figma_design_system/fonts_three.png";
-
-
 
 // Main background container
 const BgContainer = styled.div`
@@ -36,9 +33,6 @@ const MainBgImg = styled.div`
   opacity: 0.08;
   z-index: 0;
 `;
-
-// img1, img2, img3 styled-components 삭제 (불필요)
-  
 
 const MainSection = styled.section`
   display: flex;
@@ -63,6 +57,7 @@ const DescSection = styled.div`
   margin: 0;
 `;
 
+// Left column for logo section
 const LeftCol = styled.div`
   width: 400px;
   min-width: 500px;
@@ -163,6 +158,7 @@ const Desc = styled.div`
   margin-left: 0;
 `;
 
+// Right column for color and typography sections
 const RightCol = styled.div`
   width: 400px;
   min-width: 500px;
