@@ -1,6 +1,7 @@
 export const theme = {
   colors: {
     primary: "#6490FF", // 메인 블루
+    highlight: "rgba(108, 141, 212, 0.2)", // 하이라이트 블루
     secondary: "#FFFFFF", // 화이트
     text: {
       primary: "#4A4E57", // 메인 텍스트

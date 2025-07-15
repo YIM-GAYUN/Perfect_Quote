@@ -187,8 +187,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage = "quote-generator" }) => {
                 </NavItem>
                 {aboutDropdownOpen && (
                   <DropdownMenu>
-                    <DropdownItem onClick={() => { setAboutDropdownOpen(false); navigate("/about-overview"); }}>개요 및 철학</DropdownItem>
-                    <DropdownItem onClick={() => { setAboutDropdownOpen(false); navigate("/about-value"); }}>핵심 가치</DropdownItem>
+                    <DropdownItem onClick={() => { setAboutDropdownOpen(false); navigate("/about/overview"); }}>개요 및 철학</DropdownItem>
+                    <DropdownItem onClick={() => { setAboutDropdownOpen(false); navigate("/about/value"); }}>핵심 가치</DropdownItem>
                     <DropdownItem onClick={() => { setAboutDropdownOpen(false); navigate("/about-analysis"); }}>분석 및 설계</DropdownItem>
                   </DropdownMenu>
                 )}
