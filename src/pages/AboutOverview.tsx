@@ -37,8 +37,8 @@ const MainSection = styled.section`
 `;
 
 const BlueLabel = styled.div`
-  font-family: ${theme.fonts.korean.title};
-  font-size: 28px;
+  font-family: ${theme.fonts.korean.bold};
+  font-size: 30px;
   color: ${theme.colors.primary};
   margin-bottom: 22px;
 `;

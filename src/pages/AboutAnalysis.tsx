@@ -36,12 +36,11 @@ const MainSection = styled.section`
 `;
 
 const BlueLabel = styled.div`
-  font-family: ${theme.fonts.korean.primary};
-  font-size: 28px;
+  font-family: ${theme.fonts.korean.bold};
+  font-size: 30px;
   color: ${theme.colors.primary};
   margin-left: 180px;
   margin-bottom: 28px;
-  font-weight: bold;
   text-align: left;
 `;
 

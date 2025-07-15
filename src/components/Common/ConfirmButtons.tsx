@@ -39,7 +39,7 @@ const ConfirmContent = styled.div`
 `;
 
 const QuestionText = styled.p`
-  font-family: ${theme.fonts.korean.primary};
+  font-family: ${theme.fonts.korean.chatbot};
   font-size: ${theme.fontSizes.large};
   line-height: 1.5;
   margin: 0 0 ${theme.spacing.md} 0;

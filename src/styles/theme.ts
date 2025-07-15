@@ -71,6 +71,24 @@ export const theme = {
 
 export const globalStyles = `
   @font-face {
+    font-family: 'a시월구일1';
+    src: url('/fonts/a시월구일1.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'a시월구일2';
+    src: url('/fonts/a시월구일2.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+    @font-face {
+    font-family: 'a시월구일3';
+    src: url('/fonts/a시월구일3.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
     font-family: 'Freesentation-3Light';
     src: url('/fonts/Freesentation-3Light.ttf') format('truetype');
     font-weight: normal;
@@ -96,7 +114,7 @@ export const globalStyles = `
   }
   @font-face {
     font-family: 'Pretendard-Regular';
-    src: url('/fonts/Pretendard-Regular.ttf') format('opentype');
+    src: url('/fonts/Pretendard-Regular.otf') format('opentype');
     font-weight: normal;
     font-style: normal;
   }
