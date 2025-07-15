@@ -4,7 +4,7 @@ import { createGlobalStyle } from "styled-components";
 import { globalStyles } from "./styles/theme";
 import QuoteGenerator from "./pages/QuoteGenerator";
 import QuoteResult from "./pages/QuoteResult";
-import About from "./pages/About";
+import AboutOverview from "./pages/AboutOverview";
 import Ideas from "./pages/Ideas";
 import Support from "./pages/Support";
 import DesignSystem from "./pages/DesignSystem";
@@ -21,7 +21,7 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<QuoteGenerator />} />
         <Route path="/result" element={<QuoteResult />} />
-        <Route path="/about" element={<About />} />
+        <Route path="/about-overview" element={<AboutOverview />} />
         <Route path="/ideas" element={<Ideas />} />
         <Route path="/support" element={<Support />} />
         <Route path="/design-system" element={<DesignSystem />} />

@@ -40,16 +40,12 @@ const MainSection = styled.section`
 `;
 
 const Title = styled.h1`
-  font-family: ${theme.fonts.korean.primary};
+  font-family: ${theme.fonts.korean.content};
   font-size: 60px;
   color: #4A4E57;
   margin-top: 80px;
   margin-bottom: 16px;
   text-align: left;
-`;
-
-const TitleBold = styled.span`
-  font-family: ${theme.fonts.korean.bold};
 `;
 
 const SubTitle = styled.h2`
@@ -149,7 +145,7 @@ const Support: React.FC = () => {
       <BgContainer>
         <MainBgImg />
         <MainSection>
-          <Title><TitleBold>도움이 필요</TitleBold>하신가요? <br /> 연락해주세요!</Title>
+          <Title><strong>도움이 필요</strong>하신가요? <br /> 연락해주세요!</Title>
           <SubTitle>4팀 딱 맞는말</SubTitle>
           <TeamList>
             <MemberRow>

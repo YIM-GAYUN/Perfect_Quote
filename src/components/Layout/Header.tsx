@@ -118,8 +118,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage = "quote-generator" }) => {
   const location = useLocation();
 
   const navigationItems = [
-    { label: "소개", path: "/about" },
     { label: "나를 위한 한마디", path: "/" },
+    { label: "소개", path: "/about-overview", isDropdown: true },
     { label: "아이디어", path: "/ideas", isDropdown: true },
     { label: "지원", path: "/support" },
   ];
@@ -138,16 +138,21 @@ const Header: React.FC<HeaderProps> = ({ currentPage = "quote-generator" }) => {
     return false;
   };
 
-  const [dropdownOpen, setDropdownOpen] = React.useState(false);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [aboutDropdownOpen, setAboutDropdownOpen] = React.useState(false);
+  const [ideaDropdownOpen, setIdeaDropdownOpen] = React.useState(false);
+  const aboutDropdownRef = React.useRef<HTMLDivElement>(null);
+  const ideaDropdownRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
+      if (aboutDropdownRef.current && !aboutDropdownRef.current.contains(event.target as Node)) {
+        setAboutDropdownOpen(false);
+      }
+      if (ideaDropdownRef.current && !ideaDropdownRef.current.contains(event.target as Node)) {
+        setIdeaDropdownOpen(false);
       }
     }
-    if (dropdownOpen) {
+    if (aboutDropdownOpen || ideaDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -155,47 +160,78 @@ const Header: React.FC<HeaderProps> = ({ currentPage = "quote-generator" }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [dropdownOpen]);
+  }, [aboutDropdownOpen, ideaDropdownOpen]);
 
   return (
     <HeaderContainer>
       <LogoSection onClick={handleLogoClick}>
+        <img src={logoMain} alt="딱 맞는 말 로고" style={{ width: "51px", height: "51px" }} />
         <LogoText src={logoText} alt="딱 맞는 말" />
       </LogoSection>
 
       <Navigation>
-        {navigationItems.map((item) =>
-          item.isDropdown ? (
-            <div key={item.path} style={{ position: "relative" }} ref={dropdownRef}>
+        {navigationItems.map((item) => {
+          if (item.label === "소개") {
+            return (
+              <div key={item.path} style={{ position: "relative" }} ref={aboutDropdownRef}>
+                <NavItem
+                  $isActive={isCurrentPath(item.path) || ["about-overview", "about-value", "about-analysis"].includes(currentPage)}
+                  onClick={() => {
+                    setAboutDropdownOpen((open) => !open);
+                    setIdeaDropdownOpen(false);
+                  }}
+                  aria-haspopup="true"
+                  aria-expanded={aboutDropdownOpen}
+                >
+                  {item.label}
+                </NavItem>
+                {aboutDropdownOpen && (
+                  <DropdownMenu>
+                    <DropdownItem onClick={() => { setAboutDropdownOpen(false); navigate("/about-overview"); }}>개요 및 철학</DropdownItem>
+                    <DropdownItem onClick={() => { setAboutDropdownOpen(false); navigate("/about-value"); }}>핵심 가치</DropdownItem>
+                    <DropdownItem onClick={() => { setAboutDropdownOpen(false); navigate("/about-analysis"); }}>분석 및 설계</DropdownItem>
+                  </DropdownMenu>
+                )}
+              </div>
+            );
+          } else if (item.label === "아이디어") {
+            return (
+              <div key={item.path} style={{ position: "relative" }} ref={ideaDropdownRef}>
+                <NavItem
+                  $isActive={
+                    item.label === '아이디어'
+                      ? isCurrentPath(item.path) || currentPage === 'design-system' || currentPage === 'persona'
+                      : isCurrentPath(item.path)
+                  }
+                  onClick={() => {
+                    setIdeaDropdownOpen((open) => !open);
+                    setAboutDropdownOpen(false);
+                  }}
+                  aria-haspopup="true"
+                  aria-expanded={ideaDropdownOpen}
+                >
+                  {item.label}
+                </NavItem>
+                {ideaDropdownOpen && (
+                  <DropdownMenu>
+                    <DropdownItem onClick={() => { setIdeaDropdownOpen(false); navigate("/design-system"); }}>디자인 시스템</DropdownItem>
+                    <DropdownItem onClick={() => { setIdeaDropdownOpen(false); navigate("/persona"); }}>페르소나</DropdownItem>
+                  </DropdownMenu>
+                )}
+              </div>
+            );
+          } else {
+            return (
               <NavItem
-                $isActive={
-                  item.label === '아이디어'
-                    ? isCurrentPath(item.path) || currentPage === 'design-system' || currentPage === 'persona'
-                    : isCurrentPath(item.path)
-                }
-                onClick={() => setDropdownOpen((open) => !open)}
-                aria-haspopup="true"
-                aria-expanded={dropdownOpen}
+                key={item.path}
+                $isActive={isCurrentPath(item.path)}
+                onClick={() => handleNavClick(item.path)}
               >
                 {item.label}
               </NavItem>
-              {dropdownOpen && (
-                <DropdownMenu>
-                  <DropdownItem onClick={() => { setDropdownOpen(false); navigate("/design-system"); }}>디자인 시스템</DropdownItem>
-                  <DropdownItem onClick={() => { setDropdownOpen(false); navigate("/persona"); }}>페르소나</DropdownItem>
-                </DropdownMenu>
-              )}
-            </div>
-          ) : (
-            <NavItem
-              key={item.path}
-              $isActive={isCurrentPath(item.path)}
-              onClick={() => handleNavClick(item.path)}
-            >
-              {item.label}
-            </NavItem>
-          )
-        )}
+            );
+          }
+        })}
       </Navigation>
     </HeaderContainer>
   );

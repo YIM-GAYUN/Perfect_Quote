@@ -24,9 +24,12 @@ export const theme = {
   },
   fonts: {
     korean: {
-      primary: "KoreanSWGI2R, system-ui, sans-serif",
+      primary: "Freesentation 4 보통, system-ui, sans-serif",
       title: "KoreanSWGI3R, system-ui, sans-serif",
-      bold: "KoreanSWGIG3R, system-ui, sans-serif",
+      bold: "Freesentation 7 굵게, system-ui, sans-serif",
+      header: "a시월구일1, 시월구일, KoreanSWGI, SWGI, system-ui, sans-serif",
+      content: "Freesentation 4 보통, system-ui, sans-serif",
+      chatbot: "Pretendard, system-ui, sans-serif",
     },
     english: {
       primary: "Pretendard, system-ui, sans-serif",
