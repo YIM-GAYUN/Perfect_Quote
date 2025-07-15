@@ -22,7 +22,7 @@ const DropdownMenu = styled.ul`
 `;
 
 const DropdownItem = styled.li`
-  font-family: ${theme.fonts.korean.primary};
+  font-family: ${theme.fonts.korean.header};
   font-size: ${theme.fontSizes.large};
   color: ${theme.colors.text.secondary};
   padding: 0.75rem 1.5rem;
@@ -94,7 +94,7 @@ const Navigation = styled.nav`
 
 const NavItem = styled.button<{ $isActive: boolean }>`
   background: none;
-  font-family: ${theme.fonts.korean.primary};
+  font-family: ${theme.fonts.korean.header};
   font-size: ${theme.fontSizes.large};
   color: ${(props) => (props.$isActive ? theme.colors.text.primary : theme.colors.text.secondary)};
   font-weight: ${(props) => (props.$isActive ? 600 : 400)};
