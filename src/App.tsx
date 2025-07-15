@@ -6,6 +6,7 @@ import QuoteGenerator from "./pages/QuoteGenerator";
 import QuoteResult from "./pages/QuoteResult";
 import AboutOverview from "./pages/AboutOverview";
 import AboutValue from "./pages/AboutValue";
+import AboutAnalysis from "./pages/AboutAnalysis";
 import Ideas from "./pages/Ideas";
 import Support from "./pages/Support";
 import DesignSystem from "./pages/DesignSystem";
@@ -24,6 +25,7 @@ const App: React.FC = () => {
         <Route path="/result" element={<QuoteResult />} />
         <Route path="/about/overview" element={<AboutOverview />} />
         <Route path="/about/value" element={<AboutValue />} />
+        <Route path="/about/analysis" element={<AboutAnalysis />} />
         <Route path="/ideas" element={<Ideas />} />
         <Route path="/support" element={<Support />} />
         <Route path="/design-system" element={<DesignSystem />} />
