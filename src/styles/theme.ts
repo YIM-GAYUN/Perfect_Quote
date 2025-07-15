@@ -25,12 +25,12 @@ export const theme = {
   },
   fonts: {
     korean: {
-      primary: "Freesentation 4 보통, system-ui, sans-serif",
-      title: "KoreanSWGI3R, system-ui, sans-serif",
-      bold: "Freesentation 7 굵게, system-ui, sans-serif",
+      primary: "Freesentation-4Regular, system-ui, sans-serif",
+      title: "Freesentation-5Medium, system-ui, sans-serif",
+      light: "Freesentation-3Light, system-ui, sans-serif",
+      bold: "Freesentation-7Bold, system-ui, sans-serif",
       header: "a시월구일1, 시월구일, KoreanSWGI, SWGI, system-ui, sans-serif",
-      content: "Freesentation 4 보통, system-ui, sans-serif",
-      chatbot: "Pretendard, system-ui, sans-serif",
+      chatbot: "Pretendard-Regular, system-ui, sans-serif",
     },
     english: {
       primary: "Pretendard, system-ui, sans-serif",
@@ -70,6 +70,36 @@ export const theme = {
 };
 
 export const globalStyles = `
+  @font-face {
+    font-family: 'Freesentation-3Light';
+    src: url('/fonts/Freesentation-3Light.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'Freesentation-4Regular';
+    src: url('/fonts/Freesentation-4Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'Freesentation-5Medium';
+    src: url('/fonts/Freesentation-5Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'Freesentation-7Bold';
+    src: url('/fonts/Freesentation-7Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'Pretendard-Regular';
+    src: url('/fonts/Pretendard-Regular.ttf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
   * {
     margin: 0;
     padding: 0;

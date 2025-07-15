@@ -36,7 +36,7 @@ const MainSection = styled.section`
   margin-top: 80px;
   position: relative;
   z-index: 1;
-  margin-top: 10%;
+  margin-top: 8%;
 `;
 
 const LeftCol = styled.div`
@@ -52,6 +52,7 @@ const LeftCol = styled.div`
   padding: 40px 24px 32px 24px;
   margin-right: 60px;
   margin-left: -300px;
+  margin-top: 13px;
   height: 800px;
 `;
 
@@ -65,16 +66,15 @@ const ProfilePhoto = styled.img`
 
 const Name = styled.div`
   font-family: ${theme.fonts.korean.bold};
-  font-size: 32px;
+  font-size: 35px;
   color: #fff;
   margin-top: 24px;
-  margin-bottom: 8px;
   text-align: center;
 `;
 
 const AgeGender = styled.div`
   font-family: ${theme.fonts.korean.primary};
-  font-size: 20px;
+  font-size: 24px;
   color: #b1b1b1ff;
   margin-bottom: 16px;
   text-align: center;
@@ -93,14 +93,14 @@ const InfoRow = styled.div`
 
 const InfoLabel = styled.div`
   font-family: ${theme.fonts.korean.bold};
-  font-size: 18px;
+  font-size: 21px;
   color: #aeaeaeff;
   width: 80px;
 `;
 
 const InfoValue = styled.div`
   font-family: ${theme.fonts.korean.primary};
-  font-size: 18px;
+  font-size: 21px;
   color: #c1c1c1ff;
   margin-left: 16px;
 `;
@@ -119,11 +119,11 @@ const RightCol = styled.div`
 `;
 
 const Desc = styled.div`
-  font-family: ${theme.fonts.korean.title};
-  font-size: 20px;
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 24px;
   color: #676767ff;
-  margin-bottom: 32px;
-  margin-top: 0;
+  margin-bottom: 17px;
+  margin-top: 12px;
   text-align: left;
   line-height: 1.5;
   max-width: 2000px;
@@ -141,8 +141,8 @@ const BigBubble = styled.div`
   width: 100%;
   min-width: 600px;
   max-width: 1200px;
-  margin: 15px 5px 15px 5px;
-  padding: 5px 32px 5px 0;
+  margin: 8px 3px 15px 5px;
+  padding: 5px 32px 5px 10px;
 `;
 
 const RowBubble = styled.div`
@@ -159,19 +159,21 @@ const BlueBubble = styled.div`
   border-radius: 80px 80px 80px 0px;
   min-width: 115px;
   max-width: 145px;
-  padding: 16px 20px;
-  font-family: ${theme.fonts.korean.bold};
-  font-size: 20px;
+  padding: 8px 20px;
+  font-family: ${theme.fonts.korean.title};
+  font-size: 25px;
   text-align: center;
   margin-right: 24px;
-  margin-left: -10px;
-  margin-top: -10px;
+  margin-left: -21px;
+  margin-top: -12px;
   box-shadow: 0px 0px 8px 0px rgba(0,0,0,0.08);
+  width: 200px;
+  height: 50px;
 `;
 
 const BubbleText = styled.div`
   font-family: ${theme.fonts.korean.primary};
-  font-size: 19px;
+  font-size: 21px;
   color: #4A4E57;
   background: transparent;
   margin: 0;

@@ -135,7 +135,7 @@ const Box = styled.div<{ bgColor: string }>`
 const LogoTextOverlay = styled.div`
   position: absolute;
   top: 65%;
-  left: 40%;
+  left: 45%;
   transform: translate(-50%, -50%);
   color: #fff;
   font-family: ${theme.fonts.korean.bold};
@@ -143,14 +143,14 @@ const LogoTextOverlay = styled.div`
   font-weight: 550;
   text-shadow: 0 2px 16px rgba(0,0,0,0.18);
   text-align: left;
-  line-height: 1.1;
   width: 180px;
   max-width: 180px;
+  letter-spacing: 1px;
 `;
 
 const Desc = styled.div`
-  font-family: ${theme.fonts.korean.title};
-  font-size: 24px;
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 28px;
   color: #4A4E57;
   line-height: 1.5;
   text-align: justify;

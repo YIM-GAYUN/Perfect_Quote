@@ -39,19 +39,20 @@ const MainSection = styled.section`
   z-index: 1;
 `;
 
-const Title = styled.h1`
-  font-family: ${theme.fonts.korean.content};
-  font-size: 60px;
+const Title = styled.span`
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 80px;
   color: #4A4E57;
   margin-top: 80px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   text-align: left;
+  line-height: 1.3;
 `;
 
 const SubTitle = styled.h2`
-  font-family: ${theme.fonts.korean.title};
-  font-size: 22px;
-  color: #000000ff;
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 30px;
+  color: #323232ff;
   margin-top: 80px;
   margin-bottom: 40px;
   margin-left: 10px;
@@ -66,13 +67,14 @@ const TeamList = styled.div`
   margin-top: 0;
   row-gap: 32px;
   margin-left: -30px;
+  line-height: 1.3;
 `;
 
 const MemberRow = styled.div`
   display: flex;
   flex-direction: row;
   align-items: center;
-  font-size: 22px;
+  font-size: 23px;
   font-family: ${theme.fonts.korean.primary};
   color: #222;
   margin-left: 40px;
@@ -80,8 +82,8 @@ const MemberRow = styled.div`
 
 
 const Role = styled.span`
-  font-family: ${theme.fonts.korean.bold};
-  font-size: 22px;
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 23px;
   color: #222;
   width: 150px;
   display: flex;
@@ -97,16 +99,16 @@ const RoleBg = styled.span`
 `;
 
 const Name = styled.span`
-  font-family: ${theme.fonts.korean.bold};
-  font-size: 24px;
+  font-family: ${theme.fonts.korean.title};
+  font-size: 26px;
   color: #222;
   margin-right: 32px;
   width: 100px;
 `;
 
 const Gen = styled.span`
-  font-family: ${theme.fonts.korean.primary};
-  font-size: 20px;
+  font-family: ${theme.fonts.korean.light};
+  font-size: 25px;
   color: #888;
   margin-right: 32px;
   width: 50px;
@@ -114,8 +116,8 @@ const Gen = styled.span`
 
 const School = styled.span`
   font-family: ${theme.fonts.korean.primary};
-  font-size: 20px;
-  color: #888;
+  font-size: 24px;
+  color: gray;
   margin-right: 32px;
   width: 200px;
 `;
@@ -125,16 +127,16 @@ const EmailRow = styled.span`
   align-items: center;
   font-family: ${theme.fonts.korean.primary};
   font-size: 20px;
-  color: #4A4E57;
+  color: gray;
   width: 300px;
 `;
 
 const MailIcon = styled.img`
-  width: 30px;
+  width: 33px;
   height: 22px;
   margin-right: 8px;
   vertical-align: middle;
-  opacity: 0.8;
+  opacity: 0.6;
   margin-top: 2px;
 `;
 
