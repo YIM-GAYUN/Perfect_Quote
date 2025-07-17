@@ -6,6 +6,7 @@ import numpy as np
 from tqdm import tqdm
 import faiss
 
+'''
 # 벡터 정규화 (코사인 유사도 적용)
 def normalize_vectors(vectors):
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
@@ -24,17 +25,17 @@ index.add(quote_embeddings)
 
 # 4. 저장
 faiss.write_index(index, "quotes_cosine_faiss.index")
-
+'''
 
 def find_similar_quote_cosine(user_text, top_k=3):
     # FAISS 인덱스 불러오기
-    index = faiss.read_index("quotes_cosine_faiss.index")
+    index = faiss.read_index("./quotes_cosine_faiss.index")
 
     # SBERT 모델 불러오기
     model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
 
     # 원본 데이터 불러오기
-    df = pd.read_csv("quotes_with_insights_combined.csv")
+    df = pd.read_csv("../../Dataset/quotes_with_insights_combined.csv")
 
     # 사용자 입력을 벡터로 변환 후 정규화
     user_embedding = model.encode([user_text], convert_to_tensor=False)
@@ -54,5 +55,5 @@ def find_similar_quote_cosine(user_text, top_k=3):
 
 
 # 사용 예시
-user_input = "Today is a very proud day because I did my best."
+user_input = "오늘 학교에서 전공수업 시험을 봤는데 완전 망한것 같아. 준비 열심히 한 시험인데 잘 못본것 같아서 우울해."
 find_similar_quote_cosine(user_input)
