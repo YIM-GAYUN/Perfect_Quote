@@ -4,7 +4,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.chat_message_histories import ChatMessageHistory
 from dotenv import load_dotenv
 from utils.system_prompt import SYSTEM_PROMPT
-from utils.summarize_prompt import SUMMARIZE_PROMPT
+from utils.analysis_prompt import ANALYSIS_PROMPT
 import os
 import csv
 from datetime import datetime
