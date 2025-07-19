@@ -1,6 +1,13 @@
-# Perfect Quote Generator V2
+# 딱 맞는 말 - 당신의 하루에 딱 맞는 한 마디
+<img width=70% alt="000" src="https://github.com/user-attachments/assets/defd33de-f05a-49fe-94a0-6f487a2f99da" />
 
-사용자의 사연을 듣고 맞춤형 명언을 생성하는 대화형 웹 애플리케이션과 챗봇 시스템입니다.
+
+
+## 프로젝트 소개
+<img width=70% alt="001" src="https://github.com/user-attachments/assets/71762062-ed50-48df-8bfb-19ee40609c1c" />
+
+<img width=70% alt="002" src="https://github.com/user-attachments/assets/560a2751-51ce-4551-a436-77d7fc125621" />
+
 
 ## 🚀 새로운 기능
 
