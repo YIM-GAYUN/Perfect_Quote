@@ -54,9 +54,7 @@ class Chatbot:
             try:
                 # 명언 모델과 데이터를 미리 로드 (한 번만)
                 load_resources()
-                print("✅ 명언 추천 기능이 활성화되었습니다.")
             except Exception as e:
-                print(f"⚠️ 명언 추천 기능 초기화 실패: {e}")
                 self.enable_quotes = False
         
         # 프롬프트 템플릿 생성
