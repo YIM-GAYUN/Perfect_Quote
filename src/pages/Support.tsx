@@ -1,70 +1,194 @@
+
 import React from "react";
 import styled from "styled-components";
-import Layout from "../components/Layout/Layout";
+import Header from "../components/Layout/Header";
 import { theme } from "../styles/theme";
+import bgImg from "../assets/figma_design_system/bg_img.png";
+import mailIconImg from "../assets/figma_design_system/mail_emoticon.png";
 
-const SupportContainer = styled.div`
-  min-height: calc(100vh - 130px);
-  padding: ${theme.spacing.xxl} 0;
+// Main background container
+const BgContainer = styled.div`
+  min-height: 100vh;
+  width: 100vw;
+  background: #fff;
+  position: relative;
+  overflow-x: hidden;
+`;
+
+const MainBgImg = styled.div`
+  position: absolute;
+  top: 22vh;
+  width: 120vw;
+  height: 120vh;
+  left: 15vw;
+  background: url(${bgImg}) center center no-repeat;
+  background-size: contain;
+  opacity: 0.08;
+  z-index: 0;
+`;
+
+const MainSection = styled.section`
+  position: absolute;
+  top: 140px;
+  left: 160px;
+  width: 1600px;
+  height: 800px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-
-  @media (max-width: ${theme.breakpoints.mobile}) {
-    padding: ${theme.spacing.xl} 0;
-  }
+  align-items: left;
+  z-index: 1;
 `;
 
-const ContentWrapper = styled.div`
-  max-width: 800px;
-  width: 100%;
-  text-align: center;
-`;
-
-const MainTitle = styled.h1`
-  font-family: ${theme.fonts.korean.bold};
-  font-size: ${theme.fontSizes.xxlarge};
-  color: ${theme.colors.secondary};
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-  margin-bottom: ${theme.spacing.xl};
-  line-height: 1.4;
-
-  @media (max-width: ${theme.breakpoints.mobile}) {
-    font-size: ${theme.fontSizes.xlarge};
-  }
-`;
-
-const ComingSoonText = styled.p`
+const Title = styled.span`
   font-family: ${theme.fonts.korean.primary};
-  font-size: ${theme.fontSizes.xlarge};
-  color: ${theme.colors.text.primary};
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: ${theme.spacing.xl};
-  border-radius: ${theme.borderRadius.large};
-  border: 3px solid ${theme.colors.primary};
-  line-height: 1.6;
+  font-size: 80px;
+  color: #4A4E57;
+  margin-top: 80px;
+  margin-bottom: 12px;
+  text-align: left;
+  line-height: 1.3;
+`;
 
-  @media (max-width: ${theme.breakpoints.mobile}) {
-    font-size: ${theme.fontSizes.large};
-    padding: ${theme.spacing.lg};
-  }
+const SubTitle = styled.h2`
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 30px;
+  color: #323232ff;
+  margin-top: 80px;
+  margin-bottom: 40px;
+  margin-left: 10px;
+  text-align: left;
+`;
+
+const TeamList = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: 0;
+  row-gap: 32px;
+  margin-left: -30px;
+  line-height: 1.3;
+`;
+
+const MemberRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  font-size: 23px;
+  font-family: ${theme.fonts.korean.primary};
+  color: #222;
+  margin-left: 40px;
+`;
+
+
+const Role = styled.span`
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 23px;
+  color: #222;
+  width: 150px;
+  display: flex;
+  align-items: center;
+  margin-right: 25px;
+`;
+
+const RoleBg = styled.span`
+  background: rgba(100, 144, 255, 0.2); /* theme.colors.primary with 70% opacity */
+  color: #222;
+  padding: -2px 8px;
+  display: inline-block;
+`;
+
+const Name = styled.span`
+  font-family: ${theme.fonts.korean.title};
+  font-size: 26px;
+  color: #222;
+  margin-right: 32px;
+  width: 100px;
+`;
+
+const Gen = styled.span`
+  font-family: ${theme.fonts.korean.light};
+  font-size: 25px;
+  color: #888;
+  margin-right: 32px;
+  width: 50px;
+`;
+
+const School = styled.span`
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 24px;
+  color: gray;
+  margin-right: 32px;
+  width: 200px;
+`;
+
+const EmailRow = styled.span`
+  display: flex;
+  align-items: center;
+  font-family: ${theme.fonts.korean.primary};
+  font-size: 20px;
+  color: gray;
+  width: 300px;
+`;
+
+const MailIcon = styled.img`
+  width: 33px;
+  height: 22px;
+  margin-right: 8px;
+  vertical-align: middle;
+  opacity: 0.6;
+  margin-top: 2px;
 `;
 
 const Support: React.FC = () => {
   return (
-    <Layout currentPage="support">
-      <SupportContainer>
-        <ContentWrapper>
-          <MainTitle>지원</MainTitle>
-          <ComingSoonText>
-            사용자 지원 및<br />
-            고객 서비스 페이지를
-            <br />
-            준비 중입니다.
-          </ComingSoonText>
-        </ContentWrapper>
-      </SupportContainer>
-    </Layout>
+    <>
+      <Header currentPage="support" />
+      <BgContainer>
+        <MainBgImg />
+        <MainSection>
+          <Title><strong>도움이 필요</strong>하신가요? <br /> 연락해주세요!</Title>
+          <SubTitle>4팀 딱 맞는말</SubTitle>
+          <TeamList>
+            <MemberRow>
+              <Role><RoleBg>Front-end</RoleBg></Role>
+              <Name>정다훈</Name>
+              <Gen>6기</Gen>
+              <School>단국대학교</School>
+              <EmailRow><MailIcon src={mailIconImg} alt="mail icon" />jdh251425142514@gmail.com</EmailRow>
+            </MemberRow>
+            <MemberRow>
+              <Role><RoleBg>Front-end</RoleBg></Role>
+              <Name>임가윤</Name>
+              <Gen>6기</Gen>
+              <School>이화여자대학교</School>
+              <EmailRow><MailIcon src={mailIconImg} alt="mail icon" />gayunyim@gmail.com</EmailRow>
+            </MemberRow>
+            <MemberRow>
+              <Role><RoleBg>Chatbot</RoleBg></Role>
+              <Name>이연우</Name>
+              <Gen>5기</Gen>
+              <School>성신여자대학교</School>
+              <EmailRow><MailIcon src={mailIconImg} alt="mail icon" />amyamy7365@gmail.com</EmailRow>
+            </MemberRow>
+            <MemberRow>
+              <Role><RoleBg>Chatbot</RoleBg></Role>
+              <Name>김천지</Name>
+              <Gen>6기</Gen>
+              <School>상명대학교</School>
+              <EmailRow><MailIcon src={mailIconImg} alt="mail icon" />202210911@sangmyung.kr</EmailRow>
+            </MemberRow>
+            <MemberRow>
+              <Role><RoleBg>Design</RoleBg></Role>
+              <Name>최윤정</Name>
+              <Gen>7기</Gen>
+              <School>한국예술종합학교</School>
+              <EmailRow><MailIcon src={mailIconImg} alt="mail icon" />0311yunjung@gmail.com</EmailRow>
+            </MemberRow>
+          </TeamList>
+        </MainSection>
+      </BgContainer>
+    </>
   );
 };
 

@@ -36,7 +36,7 @@ const TextArea = styled.textarea`
   border: none;
   background: transparent;
   padding: ${theme.spacing.md} ${theme.spacing.lg};
-  font-family: ${theme.fonts.korean.primary};
+  font-family: ${theme.fonts.korean.chatbot};
   font-size: ${theme.fontSizes.large};
   color: ${theme.colors.text.primary};
   resize: none;

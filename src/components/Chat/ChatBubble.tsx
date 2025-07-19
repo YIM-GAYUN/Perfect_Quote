@@ -52,7 +52,7 @@ const BubbleContent = styled.div<{ $isBot: boolean }>`
 `;
 
 const BubbleText = styled.p<{ $isBot: boolean }>`
-  font-family: ${(props) => (props.$isBot ? theme.fonts.korean.primary : theme.fonts.english.mono)};
+  font-family: ${(props) => (props.$isBot ? theme.fonts.korean.chatbot : theme.fonts.english.mono)};
   font-size: ${theme.fontSizes.large};
   line-height: 1.5;
   margin: 0;
@@ -64,7 +64,7 @@ const BubbleText = styled.p<{ $isBot: boolean }>`
 `;
 
 const QuoteText = styled.p`
-  font-family: ${theme.fonts.korean.primary};
+  font-family: ${theme.fonts.korean.chatbot};
   font-size: ${theme.fontSizes.large};
   font-weight: 800;
   line-height: 1.5;
@@ -90,7 +90,7 @@ const TimestampContainer = styled.div<{ $isBot: boolean }>`
 const Timestamp = styled.span`
   font-size: 12px;
   color: ${theme.colors.text.secondary};
-  font-family: ${theme.fonts.korean.primary};
+  font-family: ${theme.fonts.korean.chatbot};
 `;
 
 const LoadingDots = styled.div`
