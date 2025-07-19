@@ -97,47 +97,279 @@ graph LR
 | **📊 데이터**   | 500K+ 명언 + 인사이트       | GPT 기반 의미 추출                   |
 | **💾 벡터DB**   | FAISS IndexFlatIP           | 29MB 인덱스, GPU 가속                |
 
-## 🚀 **Quick Start**
+## 🚀 **환경 설정 및 실행 가이드**
 
 ### **필수 요구사항**
 
-- Python 3.8+
-- Node.js 16+
-- Upstage API Key
+- **Python 3.8+ (3.11 권장)**
+- **Node.js 16+ (18 LTS 권장)**
+- **Upstage API Key** ([https://console.upstage.ai](https://console.upstage.ai)에서 발급)
 
-### **1. 환경 설정**
+### **⚠️ 중요 알림**
+팀원들이 자주 겪는 문제들을 미리 방지하기 위한 가이드입니다. 순서대로 따라하시면 문제없이 실행됩니다.
+
+---
+
+## **1️⃣ 프로젝트 클론**
 
 ```bash
-# 프로젝트 클론
-git clone https://github.com/your-repo/quote-generator-v2.git
-cd quote-generator-v2
-
-# Python 의존성 설치
-pip install -r requirements.txt
-
-# Node.js 의존성 설치
-npm install
-
-# 환경변수 설정
-cp .env.example .env
-# .env 파일에 UPSTAGE_API_KEY 설정
+git clone https://github.com/your-repo/Perfect_Quote-1.git
+cd Perfect_Quote-1
 ```
 
-### **2. 서버 실행**
+## **2️⃣ Python 환경 설정**
 
+### **Python 패키지 설치**
 ```bash
-# 백엔드 (Solar API + 임베딩 시스템)
-python app.py
+# 가상환경 생성 (권장)
+python -m venv .venv
 
-# 프론트엔드 (React 앱)
+# 가상환경 활성화
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
+
+# 패키지 설치
+pip install -r requirements.txt
+```
+
+### **로컬 임베딩 모델 다운로드**
+```bash
+# 임베딩 모델 사전 다운로드 (약 2-3분 소요)
+python download_models.py
+```
+
+**✅ 출력 예시:**
+```
+🚀 임베딩 모델 다운로드 시작
+1. sentence-transformers/all-MiniLM-L6-v2
+   ✅ 다운로드 완료 (15.0초)
+2. sentence-transformers/paraphrase-multilingual-mpnet-base-v2  
+   ✅ 다운로드 완료 (13.0초)
+🎉 모델 다운로드 완료!
+```
+
+## **3️⃣ 환경 변수 설정**
+
+### **.env 파일 생성**
+```bash
+# .env 파일 생성 (Windows PowerShell)
+"UPSTAGE_API_KEY=your_upstage_api_key_here" | Out-File -FilePath .env -Encoding ascii
+
+# 또는 수동으로 .env 파일 생성하고 다음 내용 입력:
+```
+
+**.env 파일 내용:**
+```env
+UPSTAGE_API_KEY=your_upstage_api_key_here
+FLASK_ENV=development
+FLASK_DEBUG=False
+```
+
+**⚠️ 주의:** API 키를 실제 값으로 교체하세요!
+
+## **4️⃣ Node.js 설정**
+
+### **Node.js 설치 확인**
+```bash
+node --version
+npm --version
+```
+
+**❌ 만약 "명령어를 찾을 수 없다" 오류 발생 시:**
+
+**Windows:**
+- [Node.js 공식 사이트](https://nodejs.org)에서 LTS 버전 다운로드
+- 또는 `winget install OpenJS.NodeJS` (winget 사용 시)
+
+**macOS:**
+```bash
+brew install node
+```
+
+### **Node.js 의존성 설치**
+```bash
+npm install
+```
+
+## **5️⃣ 서버 실행**
+
+### **백엔드 서버 (Flask + Solar API)**
+```bash
+python app.py
+```
+
+**✅ 성공 시 출력:**
+```
+🚀 Enhanced Solar API + LangGraph 서버 시작 중...
+📡 포트: 3001
+🔥 모델: Solar Pro API + LangGraph StateGraph
+🧠 임베딩: Enhanced SentenceTransformer + FAISS
+✨ LangGraph 기반 개인화된 명언 추천 시스템!
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:3001
+```
+
+### **프론트엔드 서버 (React)**
+**새 터미널에서:**
+```bash
 npm start
 ```
 
-### **3. 접속**
+## **6️⃣ 접속 및 테스트**
 
-- **웹 앱**: http://localhost:3000
-- **API 서버**: http://localhost:3001
-- **헬스체크**: http://localhost:3001/api/health
+- **🌐 웹 앱**: http://localhost:3000
+- **🤖 API 서버**: http://localhost:3001  
+- **🔍 헬스체크**: http://localhost:3001/api/health
+
+### **API 테스트**
+```bash
+# PowerShell에서 테스트
+Invoke-WebRequest -Uri "http://localhost:3001/api/health" -Method GET
+
+# 또는 브라우저에서 http://localhost:3001/api/health 접속
+```
+
+**✅ 정상 응답:**
+```json
+{
+  "status": "OK",
+  "model": "Solar Pro API + LangGraph",
+  "embedding_system": "✅ ACTIVE",
+  "message": "🎉 Solar API + LangGraph + 개인화 명언 추천 시스템 완전 활성화!"
+}
+```
+
+---
+
+## 🚨 **문제 해결 가이드**
+
+### **❌ 자주 발생하는 문제들**
+
+#### **1. .env 파일 인코딩 오류**
+```
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0
+```
+
+**✅ 해결 방법:**
+```bash
+# 기존 .env 파일 삭제
+Remove-Item .env -Force
+
+# 올바른 인코딩으로 재생성
+"UPSTAGE_API_KEY=your_api_key_here" | Out-File -FilePath .env -Encoding ascii
+```
+
+#### **2. Node.js 명령어 인식 안됨**
+```
+The term 'node' is not recognized as the name of a cmdlet
+```
+
+**✅ 해결 방법:**
+1. **Node.js 설치**: [https://nodejs.org](https://nodejs.org)에서 LTS 버전 다운로드
+2. **설치 확인**: PowerShell 재시작 후 `node --version` 실행
+3. **환경변수 확인**: 시스템 PATH에 Node.js 경로가 있는지 확인
+
+#### **3. Python 패키지 설치 실패**
+```
+ERROR: Could not find a version that satisfies the requirement langgraph==0.2.87
+```
+
+**✅ 해결 방법:**
+- 이미 수정된 `requirements.txt`를 사용하므로 최신 버전에서는 문제없음
+- 만약 발생 시: `pip install --upgrade pip` 후 재시도
+
+#### **4. 임베딩 모델 다운로드 실패**
+```
+ConnectionError: HTTPSConnectionPool
+```
+
+**✅ 해결 방법:**
+1. **인터넷 연결 확인**
+2. **방화벽/프록시 설정 확인**  
+3. **VPN 연결 시 일시 해제**
+4. **재시도**: `python download_models.py`
+
+#### **5. API 서버 연결 실패**
+```
+원격 서버에 연결할 수 없습니다
+```
+
+**✅ 해결 방법:**
+1. **백엔드 서버 실행 확인**: `python app.py`가 정상 실행 중인지 확인
+2. **포트 충돌 확인**: 3001 포트가 다른 프로세스에서 사용 중인지 확인
+   ```bash
+   netstat -ano | findstr :3001
+   ```
+3. **방화벽 해제**: Windows Defender 방화벽에서 Python 허용
+
+#### **6. UPSTAGE API 키 오류**
+```
+401 Unauthorized
+```
+
+**✅ 해결 방법:**
+1. **API 키 확인**: [Upstage Console](https://console.upstage.ai)에서 유효한 키인지 확인
+2. **.env 파일 확인**: API 키가 올바르게 설정되었는지 확인
+3. **서버 재시작**: API 키 변경 후 `python app.py` 재시작
+
+#### **7. 임베딩 시스템 fallback 모드**
+```
+"embedding_system": "⚠️ FALLBACK"
+```
+
+**✅ 정상 동작임:**
+- 로컬 모델이 로드되지 않아도 기본 명언 시스템으로 작동
+- 성능 향상을 위해 `python download_models.py` 실행 권장
+
+### **🔍 디버깅 명령어**
+
+#### **환경 확인**
+```bash
+# Python 버전 확인
+python --version
+
+# 패키지 설치 확인  
+pip list | findstr -i "flask langchain upstage"
+
+# Node.js 확인
+node --version && npm --version
+
+# .env 파일 확인
+Get-Content .env
+```
+
+#### **서버 상태 확인**
+```bash
+# 백엔드 헬스체크
+Invoke-WebRequest -Uri "http://localhost:3001/api/health"
+
+# 프론트엔드 확인 (브라우저에서)
+# http://localhost:3000
+```
+
+#### **로그 확인**
+```bash
+# Python 서버 로그 (실행 시 터미널에서 확인)
+python app.py
+
+# 자세한 오류 로그가 필요한 경우
+python app.py --debug
+```
+
+### **📞 도움 요청 시 제공할 정보**
+
+문제 발생 시 다음 정보를 함께 제공해주세요:
+
+1. **운영체제**: Windows/macOS/Linux 버전
+2. **Python 버전**: `python --version` 결과
+3. **Node.js 버전**: `node --version` 결과  
+4. **오류 메시지**: 정확한 에러 텍스트
+5. **실행 단계**: 어느 단계에서 문제 발생했는지
+6. **환경 설정**: .env 파일 설정 여부 (API 키 제외)
+
+---
 
 ## 📚 **API 명세**
 
@@ -320,13 +552,128 @@ docker-compose up -d
 - [ ] 커뮤니티 기능
 - [ ] 모바일 앱 출시
 
-## 🤝 **기여 방법**
+## ⚡ **빠른 시작 체크리스트**
 
-1. **Fork** 저장소
-2. **Feature 브랜치** 생성 (`git checkout -b feature/AmazingFeature`)
-3. **커밋** (`git commit -m 'Add some AmazingFeature'`)
-4. **Push** (`git push origin feature/AmazingFeature`)
-5. **Pull Request** 생성
+팀원들을 위한 한 눈에 보는 체크리스트입니다:
+
+### **🔍 사전 확인사항**
+- [ ] Python 3.8+ 설치됨
+- [ ] Node.js 16+ 설치됨  
+- [ ] Upstage API 키 확보
+- [ ] Git 클론 완료
+
+### **🛠️ 환경 설정**
+- [ ] `pip install -r requirements.txt` 실행
+- [ ] `python download_models.py` 실행 (모델 다운로드)
+- [ ] `.env` 파일 생성 및 API 키 설정
+- [ ] `npm install` 실행
+
+### **🚀 실행 확인**
+- [ ] `python app.py` → 백엔드 서버 실행됨
+- [ ] `npm start` → 프론트엔드 서버 실행됨
+- [ ] Health check API 응답 정상
+- [ ] 웹 브라우저에서 접속 가능
+
+### **🧪 기능 테스트**
+- [ ] 채팅 기능 동작
+- [ ] AI 응답 생성됨
+- [ ] 명언 추천 시스템 작동
+
+---
+
+## 📁 **주요 파일 설명**
+
+팀원들이 알아야 할 핵심 파일들입니다:
+
+### **🤖 백엔드 (Python/Flask)**
+```
+app.py                      # 메인 Flask 서버 (가장 중요)
+├── LangGraph 워크플로우    # Solar API + 대화 분석
+├── 임베딩 검색 시스템      # FAISS + SentenceTransformer  
+└── RESTful API 엔드포인트 # /api/chat/send, /api/health
+
+utils/
+├── system_prompt.py        # AI 시스템 프롬프트
+├── analysis_prompt.py      # 대화 분석 프롬프트  
+├── quote_retriever.py      # 명언 검색 엔진
+└── chatbot_utils.py        # 챗봇 유틸리티
+
+requirements.txt            # Python 패키지 의존성
+download_models.py          # 임베딩 모델 다운로드 스크립트
+.env                        # 환경 변수 (API 키 등)
+```
+
+### **🎨 프론트엔드 (React/TypeScript)**
+```
+src/
+├── components/             # 재사용 가능한 컴포넌트
+│   ├── Chat/              # 채팅 관련 컴포넌트
+│   ├── Common/            # 공통 컴포넌트
+│   └── Layout/            # 레이아웃 컴포넌트
+├── pages/                 # 페이지 컴포넌트
+├── hooks/                 # 커스텀 React 훅
+├── services/api.ts        # 백엔드 API 통신
+└── types/                 # TypeScript 타입 정의
+
+package.json               # Node.js 패키지 의존성
+```
+
+### **🧠 AI/ML 데이터**
+```
+Dataset/
+├── quotes_with_insights_combined.csv  # 500K+ 명언 데이터셋
+└── sampled_quotes.csv                 # 샘플 데이터
+
+vectorDB/FAISS/
+├── quotes_cosine_faiss.index          # FAISS 벡터 인덱스 (29MB)
+└── faiss_cosine.py                    # FAISS 검색 로직
+
+models/sentence-transformers/          # 로컬 임베딩 모델 (다운로드됨)
+├── all-MiniLM-L6-v2/                 # 경량 모델
+└── paraphrase-multilingual-mpnet-base-v2/  # 다국어 모델
+```
+
+---
+
+## 🤝 **팀 협업 가이드**
+
+### **🔀 Git 워크플로우**
+```bash
+# 1. 최신 코드 동기화
+git pull origin main
+
+# 2. 기능 브랜치 생성  
+git checkout -b feature/your-feature-name
+
+# 3. 개발 및 커밋
+git add .
+git commit -m "feat: 새로운 기능 추가"
+
+# 4. 푸시 및 PR 생성
+git push origin feature/your-feature-name
+# GitHub에서 Pull Request 생성
+```
+
+### **📝 커밋 메시지 규칙**
+- `feat:` 새로운 기능 추가
+- `fix:` 버그 수정  
+- `docs:` 문서 수정
+- `style:` 코드 스타일 변경
+- `refactor:` 코드 리팩토링
+- `test:` 테스트 추가/수정
+
+### **🎯 역할 분담**
+- **백엔드**: `app.py`, `utils/` 폴더 담당
+- **프론트엔드**: `src/` 폴더 담당  
+- **AI/ML**: `vectorDB/`, 모델 최적화 담당
+- **DevOps**: 배포, 환경설정, 문서화 담당
+
+### **🔄 개발 프로세스**
+1. **이슈 생성**: GitHub Issues에서 작업 내용 명시
+2. **브랜치 생성**: 이슈 번호를 포함한 브랜치명 사용
+3. **개발**: 로컬에서 기능 개발 및 테스트
+4. **PR 생성**: 상세한 설명과 함께 Pull Request
+5. **코드 리뷰**: 팀원 검토 후 머지
 
 ## 📄 **라이센스**
 

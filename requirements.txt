@@ -3,7 +3,7 @@ langchain-upstage==0.6.0
 langchain-core==0.3.67
 langchain-community==0.3.26
 langchain==0.3.26
-langgraph==0.2.87
+langgraph==0.5.3
 
 # Environment and data handling
 python-dotenv==1.1.1
