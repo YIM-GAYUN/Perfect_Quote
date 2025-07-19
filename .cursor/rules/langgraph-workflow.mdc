@@ -1,0 +1,100 @@
+---
+globs: "*.py"
+description: "LangGraph workflow and 10-turn analysis system guidelines"
+---
+
+# LangGraph 워크플로우 및 10턴 분석 시스템 규칙
+
+## 🔄 StateGraph 워크플로우 원칙
+
+### **노드 연결 순서**
+```
+START → validate_user_input → chatbot → save_history → [조건부 분기]
+├─ (< 10턴) → END
+└─ (≥ 10턴) → analyze_chat_history → generate_advice → END
+```
+
+### **상태 관리 규칙**
+- ChatbotState TypedDict 사용으로 타입 안전성 보장
+- 각 노드는 기존 상태를 유지하며 필요한 필드만 업데이트
+- `{**state, "new_field": value}` 패턴 사용
+
+## 🎯 10턴 분석 시스템
+
+### **분석 트리거 조건**
+- `len(state["chat_history"].messages) >= 10` 체크
+- should_analyze_chat_history() 분기 함수에서 결정
+- 정확히 10턴 달성 시에만 분석 실행 (중복 실행 방지)
+
+### **분석 프로세스**
+1. **analyze_chat_history()**: ANALYSIS_PROMPT로 대화 히스토리 분석
+2. **generate_advice()**: 조언, 키워드, 명언 후보 3개 생성
+3. **present_quote()**: 첫 번째 명언 후보 제시
+4. **명언 선택 모드 시작**: quote_selection_mode = True
+
+## 💬 명언 선택 인터페이스
+
+### **사용자 입력 처리**
+```python
+# 허용되는 긍정 응답
+['예', 'yes', 'y', '네', '선택']
+
+# 허용되는 부정 응답 (다음 명언)
+['아니오', 'no', 'n', '아니', '다음']
+
+# 잘못된 입력 시 재요청
+```
+
+### **명언 순환 시스템**
+- 3개 후보 명언을 순환하여 제시
+- `next_index = (current_index + 1) % len(candidate_quotes)`
+- 사용자가 선택할 때까지 무한 순환
+
+## 🔧 Enhanced Solar Chatbot 클래스
+
+### **인스턴스 관리**
+- 세션별 독립적인 EnhancedSolarChatbot 인스턴스
+- chatbot_sessions 딕셔너리로 세션 추적
+- session_lock으로 동시성 제어
+
+### **모드 전환 로직**
+```python
+# 일반 대화 모드
+if not quote_selection_mode:
+    result = graph.invoke(state)
+
+# 명언 선택 모드  
+if quote_selection_mode:
+    process_quote_selection(state)
+```
+
+## 📊 API 응답 구조
+
+### **기본 응답 필드**
+- content: 챗봇 응답 메시지
+- conversation_summary: 대화 요약 정보
+- model: "Solar Pro + LangGraph"
+- embedding_system: "Enhanced FAISS"
+
+### **10턴 분석 완료 시 추가 필드**
+- analysis_complete: true
+- advice: LLM 생성 조언
+- keywords: 추출된 키워드 배열
+
+### **명언 선택 완료 시 추가 필드**
+- quote: 최종 선택된 명언 정보
+- method: "langgraph_enhanced_selection"
+
+## 🚫 금지 사항
+
+- LangGraph 워크플로우 중간에 임의로 상태 수정하지 말 것
+- 10턴 미만에서 강제로 분석 시스템 실행하지 말 것
+- 명언 선택 모드에서 일반 대화 노드 실행하지 말 것
+- 세션 간 상태 공유 절대 금지
+
+## 📝 관련 파일
+
+- 메인 워크플로우: [app.py](mdc:app.py) - ChatbotState, StateGraph 정의
+- 분석 프롬프트: [utils/analysis_prompt.py](mdc:utils/analysis_prompt.py)
+- 명언 검색: [utils/quote_retriever.py](mdc:utils/quote_retriever.py)
+- 시스템 프롬프트: [utils/system_prompt.py](mdc:utils/system_prompt.py)

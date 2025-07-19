@@ -3,6 +3,7 @@ langchain-upstage==0.6.0
 langchain-core==0.3.67
 langchain-community==0.3.26
 langchain==0.3.26
+langgraph==0.2.87
 
 # Environment and data handling
 python-dotenv==1.1.1
@@ -15,3 +16,8 @@ ipykernel==6.29.5
 # Web framework for API server
 flask==3.0.0
 flask-cors==4.0.0
+
+# AI/ML packages for embedding search
+sentence-transformers==3.2.0
+faiss-cpu==1.9.0
+transformers==4.44.2

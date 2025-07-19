@@ -7,16 +7,29 @@ import time
 import random
 import threading
 
-# Solar API 관련 imports
+# LangGraph imports
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_upstage import ChatUpstage
 from langchain_community.chat_message_histories import ChatMessageHistory
+from langgraph.graph import StateGraph, START, END
+from typing import TypedDict, List, Dict, Any, Annotated, Optional
+
 import os
 from dotenv import load_dotenv
 
 # 시스템 프롬프트 import
 from utils.system_prompt import SYSTEM_PROMPT
+from utils.analysis_prompt import ANALYSIS_PROMPT
+
+# 명언 검색 시스템
+try:
+    from utils.quote_retriever import find_similar_quote_cosine_silent
+    print("✅ 명언 검색 시스템 로드 완료")
+    QUOTE_RETRIEVER_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ 명언 검색 시스템 로드 실패: {e}")
+    QUOTE_RETRIEVER_AVAILABLE = False
 
 # 임베딩 기반 검색을 위한 imports (조건부)
 import pandas as pd
@@ -44,324 +57,449 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# 실제 Solar API + 임베딩 기반 챗봇 클래스
-class SolarChatbot:
-    def __init__(self):
-        self.chat_history = ChatMessageHistory()
-        self.conversation_count = 0
-        
-        # Solar Pro LLM 초기화
-        self.llm = ChatUpstage(
-            model="solar-pro",
-            temperature=0.7,
-            max_tokens=300,
-        )
-        
-        # 임베딩 시스템 백그라운드 초기화
-        self.embedding_system_available = False
-        if EMBEDDING_LIBS_AVAILABLE:
-            print("🔄 임베딩 시스템 백그라운드 로딩 시작...")
-            self._start_background_embedding_init()
-        else:
-            print("⚠️ 임베딩 라이브러리 없음 - 기본 기능만 사용")
-        
-        # 폴백용 기본 명언 (임베딩 시스템 실패 시)
-        self.fallback_quotes = [
-            {
-                "text": "가장 어두운 밤도 결국은 끝나고, 해는 떠오른다.",
-                "author": "빅터 위고",
-                "category": "hope"
-            },
-            {
-                "text": "넘어지는 것은 실패가 아니다. 넘어진 자리에 머무는 것이 실패다.",
-                "author": "공자",
-                "category": "resilience"
-            },
-            {
-                "text": "행복은 습관이다. 그것을 몸에 지니라.",
-                "author": "허버드",
-                "category": "happiness"
-            }
-        ]
+# === LangGraph State 정의 ===
+class ChatbotState(TypedDict):
+    # 사용자 정보
+    user_id: Annotated[str, "User ID"]
+    thread_num: Annotated[str, "Session ID"]
     
-    def _start_background_embedding_init(self):
-        """별도 스레드에서 임베딩 시스템 초기화"""
-        def background_init():
-            global EMBEDDING_LOADING, EMBEDDING_AVAILABLE
-            EMBEDDING_LOADING = True
-            start_time = time.time()
+    # 대화 정보
+    user_message: Annotated[str, "User Message"]
+    chatbot_message: Annotated[str, "Chatbot Message"]
+    timestamp: Annotated[str, "Timestamp of the conversation"]
+    chat_history: Annotated[ChatMessageHistory, "chat history of user and ai"]
+    status: Annotated[str, "Status of the conversation"]
+    
+    # 대화 분석 정보
+    chat_analysis: Annotated[str, "Analysis of the conversation"]
+    retrieved_quotes_and_authors: Annotated[Dict[str, str] | List[tuple[str, str]], "Retrieved 3 quotes and 3 authors from vector db"]
+    quote: Annotated[str, "Quote for the conversation"]
+    author: Annotated[str, "Author of the quote"]
+    keywords: Annotated[List[str], "Keywords of the conversation"]
+    advice: Annotated[str, "Advice for the conversation"]
+    
+    # 명언 선택 기능을 위한 필드들
+    candidate_quotes: Annotated[List[Dict], "List of candidate quotes with similarity scores"]
+    current_quote_index: Annotated[int, "Current quote index being presented"]
+    quote_selection_complete: Annotated[bool, "Whether quote selection is complete"]
+
+# === LangGraph 노드 함수들 ===
+def validate_user_input(state: ChatbotState) -> ChatbotState:
+    user_input = state["user_message"]
+    if not isinstance(user_input, str):
+        raise TypeError("User message must be a string")
+    
+    user_input = user_input.strip()
+    if not user_input:
+        raise ValueError("User message cannot be empty")
+        
+    if len(user_input) > 150:
+        raise ValueError("User message cannot be longer than 150 characters")
+    
+    return {
+        **state,
+        "user_message": user_input,
+        "status": "validated"
+    }
+
+def _init_llm():
+    return ChatUpstage(
+        model="solar-pro",
+        temperature=0.7,
+        max_tokens=300,
+    )
+
+def _build_chain():
+    llm = _init_llm()
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", SYSTEM_PROMPT),
+        ("user", "{user_input}")
+    ])
+    chain = prompt | llm  
+    return chain
+
+def chatbot(state: ChatbotState) -> ChatbotState:
+    # Initialize chat history if empty
+    chat_history = state["chat_history"]
+    if not chat_history:
+        chat_history = ChatMessageHistory()
+        
+    # Format chat history for prompt if needed
+    formatted_history = ""
+    if chat_history.messages:
+        formatted_history = "\n".join([
+            f"{'User' if isinstance(msg, HumanMessage) else 'Assistant'}: {msg.content}"
+            for msg in chat_history.messages[-6:]  # 최근 6개 메시지만 사용
+        ])
+        
+    chain = _build_chain()
+    response = chain.invoke({
+        "user_input": f"{formatted_history}\n\nUser: {state['user_message']}" if formatted_history else state["user_message"]
+    })
+
+    return {
+        **state,
+        "chatbot_message": str(response.content),
+        "timestamp": datetime.now().isoformat(),
+        "status": "completed"
+    }
+
+def save_history(state: ChatbotState) -> ChatbotState:
+    chat_history = state["chat_history"]
+    chat_history.add_messages([
+        HumanMessage(content=state["user_message"]),
+        AIMessage(content=state["chatbot_message"])
+    ])
+
+    return {
+        **state,
+        "chat_history": chat_history 
+    }
+
+def _build_analysis_chain():
+    llm = _init_llm()
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", ANALYSIS_PROMPT),
+        ("user", "다음 대화 히스토리를 분석하라. \\n\\n{chat_history}")
+    ])
+    chain = prompt | llm
+    return chain
+
+def analyze_chat_history(state: ChatbotState) -> ChatbotState:
+    chat_history = state["chat_history"]
+
+    # 대화 턴 수가 10턴 이상이면 분석을 한다.
+    if len(chat_history.messages) < 10:
+        raise ValueError("Chat history must be at least 10 messages")
+    
+    # 분석 체인을 생성하고 실행한다.
+    analysis_chain = _build_analysis_chain()
+    analysis_response = analysis_chain.invoke({
+        "chat_history": str(chat_history)
+    })
+    chat_analysis = analysis_response.content
+    return {
+        **state,
+        "chat_analysis": str(chat_analysis)
+    }
+
+def _build_advice_and_keywords_chain():
+    llm = _init_llm()
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", ANALYSIS_PROMPT + "\n\n분석 결과를 바탕으로 다음 두 가지를 제공해줘요.:\n1. 사용자에게 적절한 조언을 해줘요. 사용자에게는 '당신, 그대'라는 2인칭 표현을 사용해요. (최대 세 문장, 문학적이고 감성적인 어투를 사용하여 친절하게 제공해줘요.)\n2. 대화 내용의 키워드 (최대 5개, 쉼표로 구분)\n\n형식:\n조언: [조언 내용]\n키워드: [키워드1, 키워드2, 키워드3]"),
+        ("user", "{chat_history}")
+    ])
+    chain = prompt | llm
+    return chain
+
+def generate_advice(state: ChatbotState) -> ChatbotState:
+    """대화 분석을 바탕으로 사용자에 적합한 조언을 생성한다."""
+    llm = _build_advice_and_keywords_chain()
+
+    chat_analysis = state["chat_analysis"]
+    result = llm.invoke({"chat_history": chat_analysis})
+    
+    # 응답 텍스트 파싱
+    response_text = str(result.content)
+    advice = "대화를 통해 행복을 찾아가시길 바랍니다."
+    keywords = ["대화", "행복", "고민"]
+    
+    # 기본 명언 데이터 (명언 검색 실패 시 사용) - 대화 분석 기반 동적 선택
+    import random
+    
+    quote_pools = {
+        'general': [
+            {"quote": "인생은 우리가 만들어가는 것이다. 어제보다 나은 오늘을 만들자.", "author": "랄프 왈도 에머슨", "category": "성장", "similarity": 0.88},
+            {"quote": "변화를 두려워하지 마라. 성장의 시작이다.", "author": "보 베넷", "category": "성장", "similarity": 0.85},
+            {"quote": "지혜는 경험에서 나오고, 경험은 도전에서 나온다.", "author": "오스카 와일드", "category": "지혜", "similarity": 0.82}
+        ],
+        'success': [
+            {"quote": "성공은 준비와 기회가 만나는 지점에서 일어난다.", "author": "바비 언저", "category": "성공", "similarity": 0.92},
+            {"quote": "실패는 성공의 어머니다. 포기하지 말고 계속 도전하라.", "author": "토마스 에디슨", "category": "성공", "similarity": 0.89},
+            {"quote": "꿈을 향해 나아가라. 목표가 있으면 길이 보인다.", "author": "랄프 왈도 에머슨", "category": "목표", "similarity": 0.87}
+        ],
+        'hope': [
+            {"quote": "어둠 속에서도 한 줄기 빛은 찾을 수 있다.", "author": "마틴 루터 킹", "category": "희망", "similarity": 0.90},
+            {"quote": "모든 어려움은 지나간다. 시간이 최고의 치료제다.", "author": "괴테", "category": "치유", "similarity": 0.87},
+            {"quote": "고통은 피할 수 없지만, 고통에 대한 고뇌는 선택사항이다.", "author": "하버 딜런", "category": "극복", "similarity": 0.84}
+        ]
+    }
+    
+    # 대화 분석 내용에 따라 적절한 명언 풀 선택
+    analysis_text = chat_analysis.lower()
+    if any(word in analysis_text for word in ['성공', '도전', '목표', '노력']):
+        default_quotes = quote_pools['success']
+    elif any(word in analysis_text for word in ['힘들', '어려움', '슬픔', '우울']):
+        default_quotes = quote_pools['hope']
+    else:
+        default_quotes = quote_pools['general']
+    
+    try:
+        # 명언 검색 (노트북 방식 사용)
+        if QUOTE_RETRIEVER_AVAILABLE:
+            import warnings
+            import sys
+            from io import StringIO
+            
+            # 모든 출력과 경고 억제
+            old_stdout = sys.stdout
+            old_stderr = sys.stderr
             
             try:
-                print("📥 임베딩 시스템 백그라운드 초기화 시작...")
-                
-                # 런타임에 라이브러리 재시도
-                import_start = time.time()
-                try:
-                    import faiss
-                    from sentence_transformers import SentenceTransformer
-                    import_time = time.time() - import_start
-                    print(f"✅ 런타임 라이브러리 import 성공 ({import_time:.2f}초)")
-                except ImportError as import_err:
-                    print(f"❌ 런타임 import 실패: {import_err}")
-                    raise import_err
-                
-                # FAISS 인덱스 로드
-                faiss_start = time.time()
-                print("📁 FAISS 인덱스 로드 중...")
-                self.faiss_index = faiss.read_index("vectorDB/FAISS/quotes_cosine_faiss.index")
-                faiss_time = time.time() - faiss_start
-                print(f"✅ FAISS 인덱스 로드 완료 ({faiss_time:.2f}초)")
-                
-                # SentenceTransformer 모델 로드
-                model_start = time.time()
-                print("🧠 SentenceTransformer 모델 로드 시작...")
-                print("  📥 HuggingFace Hub에서 모델 확인 중...")
-                
-                # 메모리 사용량 확인
-                try:
-                    import psutil
-                    memory_before = psutil.virtual_memory().used / (1024**3)
-                    print(f"  💾 메모리 사용량 (로드 전): {memory_before:.2f}GB")
-                    memory_tracking = True
-                except ImportError:
-                    print("  ⚠️ psutil 없음 - 메모리 추적 건너뛰기")
-                    memory_tracking = False
-                    memory_before = 0
-                
-                # 상세 진단을 위한 단계별 로드
-                try:
-                    # 로컬 모델 경로 우선 확인
-                    local_models_dir = "./models/sentence-transformers"
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    sys.stdout = StringIO()
+                    sys.stderr = StringIO()
                     
-                    # 로컬 다국어 모델만 사용 (Cursor Rules 준수)
-                    multilingual_model = "paraphrase-multilingual-mpnet-base-v2"
-                    local_multilingual = os.path.join(local_models_dir, multilingual_model)
+                    quotes = find_similar_quote_cosine_silent(chat_analysis, top_k=3)
                     
-                    # 로컬 모델 존재 여부 확인
-                    if os.path.exists(local_multilingual):
-                        model_path = local_multilingual
-                        model_type = "다국어 모델 (로컬)"
-                        print(f"  🏠 로컬 다국어 모델 사용: {model_path}")
-                    else:
-                        raise FileNotFoundError(f"로컬 모델이 없습니다: {local_multilingual}")
+            finally:
+                # 출력 복원
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+            
+            # 검색 결과 검증
+            if quotes and len(quotes) > 0 and all('quote' in q and 'author' in q for q in quotes):
+                retrieved_quotes_and_authors = quotes
+                print(f"✅ 명언 검색 성공: {len(quotes)}개 후보")
+            else:
+                print("⚠️ 명언 검색 결과가 올바르지 않아 기본 명언을 사용합니다.")
+                retrieved_quotes_and_authors = default_quotes
+        else:
+            print("⚠️ quote_retriever 사용 불가 - 기본 명언 사용")
+            retrieved_quotes_and_authors = default_quotes
+
+    except Exception as e:
+        print(f"⚠️ 명언 검색 중 오류 발생: {e}")
+        print("기본 명언을 사용합니다.")
+        retrieved_quotes_and_authors = default_quotes
+
+    try:
+        lines = response_text.split('\n')
+        for line in lines:
+            if line.startswith('조언:'):
+                advice = line.replace('조언:', '').strip()
+            elif line.startswith('키워드:'):
+                keywords_text = line.replace('키워드:', '').strip()
+                keywords = [k.strip() for k in keywords_text.split(',')]
+    except Exception:
+        pass  # 기본값 사용
+    
+    return {**state,
+        "retrieved_quotes_and_authors": retrieved_quotes_and_authors,
+        "advice": advice,
+        "keywords": keywords,
+        "candidate_quotes": retrieved_quotes_and_authors,
+        "current_quote_index": 0,
+        "quote_selection_complete": False,
+        "quote": "",
+        "author": ""
+    }
+
+def present_quote(state: ChatbotState) -> ChatbotState:
+    """현재 인덱스의 명언을 사용자에게 제시한다."""
+    candidate_quotes = state["candidate_quotes"]
+    current_index = state["current_quote_index"]
+    
+    if not candidate_quotes:
+        return {
+            **state,
+            "chatbot_message": "죄송합니다. 추천할 명언을 찾을 수 없어서 대화를 종료하겠습니다.",
+            "quote_selection_complete": True
+        }
+    
+    # 현재 명언 가져오기
+    current_quote = candidate_quotes[current_index]
+    quote_text = current_quote["quote"]
+    author_text = current_quote["author"]
+    similarity = current_quote.get("similarity", 0)
+    
+    # 사용자에게 명언 제시
+    message = f"다음 명언은 어떠신가요?\n\n💬 \"{quote_text}\"\n✍️ 저자: {author_text}\n📊 유사도: {similarity:.3f}\n\n이 명언을 선택하시겠습니까? (예/아니오)"
+    
+    return {
+        **state,
+        "chatbot_message": message
+    }
+
+def process_quote_selection(state: ChatbotState) -> ChatbotState:
+    """사용자의 명언 선택 응답을 처리한다."""
+    user_input = state["user_message"].strip().lower()
+    candidate_quotes = state["candidate_quotes"]
+    current_index = state["current_quote_index"]
+    
+    if user_input in ['예', 'yes', 'y', '네', '선택']:
+        # 현재 명언 선택 확정
+        selected_quote = candidate_quotes[current_index]
+        return {
+            **state,
+            "quote": selected_quote["quote"],
+            "author": selected_quote["author"],
+            "quote_selection_complete": True,
+            "chatbot_message": "좋은 선택이에요! 명언이 확정되었습니다."
+        }
+    
+    elif user_input in ['아니오', 'no', 'n', '아니', '다음']:
+        # 다음 명언으로 이동 (순환)
+        next_index = (current_index + 1) % len(candidate_quotes)
+        return {
+            **state,
+            "current_quote_index": next_index,
+            "chatbot_message": "다음 명언을 보여드릴게요!"
+        }
+    
+    else:
+        # 잘못된 입력
+        return {
+            **state,
+            "chatbot_message": "'예' 또는 '아니오'로 답해주세요."
+        }
+
+# === 분기 엣지 정의 ===
+def should_analyze_chat_history(state: ChatbotState) -> str:
+    if len(state["chat_history"].messages) >= 10:
+        return "messages >= 10"
+    else:
+        return "messages < 10"
+
+# === LangGraph 워크플로우 구성 ===
+workflow = StateGraph(ChatbotState)
+
+# 노드 추가
+workflow.add_node("validate_user_input", validate_user_input)
+workflow.add_node("chatbot", chatbot)
+workflow.add_node("save_history", save_history)
+workflow.add_node("analyze_chat_history", analyze_chat_history)
+workflow.add_node("generate_advice", generate_advice)
+
+# 엣지 연결
+workflow.add_edge(START, "validate_user_input")
+workflow.add_edge("validate_user_input", "chatbot")
+workflow.add_edge("chatbot", "save_history")
+
+# 조건부 분기 추가
+workflow.add_conditional_edges(
+    "save_history",
+    should_analyze_chat_history,
+    path_map={
+        "messages >= 10": "analyze_chat_history",
+        "messages < 10": END
+    }
+)
+
+# analyze_chat_history에서 generate_advice로
+workflow.add_edge("analyze_chat_history", "generate_advice")
+workflow.add_edge("generate_advice", END)
+
+# 그래프 컴파일
+graph = workflow.compile()
+
+# === 향상된 Solar 챗봇 클래스 ===
+class EnhancedSolarChatbot:
+    def __init__(self):
+        self.state = {
+            "user_id": "",
+            "thread_num": "",
+            "user_message": "",
+            "chatbot_message": "",
+            "timestamp": "",
+            "chat_history": ChatMessageHistory(),
+            "status": "",
+            "quote": "",
+            "author": "",
+            "retrieved_quotes_and_authors": [],
+            "candidate_quotes": [],
+            "current_quote_index": 0,
+            "quote_selection_complete": False,
+            "chat_analysis": "",
+            "keywords": [],
+            "advice": ""
+        }
+        
+        # 명언 선택 모드 추적
+        self.quote_selection_mode = False
+        
+        print("🚀 Enhanced Solar Chatbot with LangGraph 초기화 완료")
+    
+    def run_chatbot_once(self, user_input, user_id, thread_num):
+        """단일 턴 대화 실행"""
+        # 상태 업데이트
+        self.state["user_message"] = user_input
+        self.state["user_id"] = user_id
+        self.state["thread_num"] = thread_num
+
+        try:
+            # 명언 선택 모드인지 확인
+            if self.state.get('candidate_quotes') and not self.state.get('quote_selection_complete', False):
+                self.quote_selection_mode = True
+                
+            if self.quote_selection_mode:
+                # 명언 선택 모드 처리
+                self.state = validate_user_input(self.state)
+                self.state = process_quote_selection(self.state)
+                
+                # 선택이 완료되었는지 확인
+                if self.state.get('quote_selection_complete'):
+                    print(f"✅ 명언 선택 완료: {self.state['quote'][:50]}...")
+                    self.quote_selection_mode = False
+                    return self.state
+                else:
+                    # 다음 명언 제시
+                    self.state = present_quote(self.state)
+                    return self.state
+            else:
+                # 일반 대화 모드 - LangGraph 실행
+                result = graph.invoke(self.state)
+                self.state.update(result)
+                
+                # 10턴 후 분석이 완료되었는지 확인
+                if len(self.state["chat_history"].messages) >= 10:
+                    if self.state.get('advice') and self.state.get('keywords'):
+                        print("🎉 10턴 대화 완료 - 분석 결과 준비됨")
                         
-                    # 로컬 캐시 폴더 사용하여 온라인 다운로드 금지
-                    cache_check_start = time.time()
-                    self.embedding_model = SentenceTransformer(
-                        multilingual_model, 
-                        cache_folder=local_models_dir
-                    )
-                    model_time = time.time() - model_start
-                    cache_time = time.time() - cache_check_start
-                    
-                    # 메모리 사용량 확인
-                    if memory_tracking:
-                        memory_after = psutil.virtual_memory().used / (1024**3)
-                        memory_used = memory_after - memory_before
-                        print(f"  💾 메모리 사용량 (로드 후): {memory_after:.2f}GB (증가: {memory_used:.2f}GB)")
-                    
-                    print(f"✅ {model_type} 로드 완료 ({model_time:.2f}초, 실제: {cache_time:.2f}초)")
-                    
-                except Exception as model_err:
-                    print(f"❌ 모델 로드 상세 오류: {model_err}")
-                    raise model_err
+                        # 명언 선택 모드 시작
+                        if self.state.get('candidate_quotes'):
+                            print("🔄 명언 선택 모드 시작")
+                            self.state = present_quote(self.state)
+                            self.quote_selection_mode = True
                 
-                # 명언 데이터셋 로드
-                dataset_start = time.time()
-                print("📊 명언 데이터셋 로드 중...")
-                self.quotes_df = pd.read_csv("Dataset/quotes_with_insights_combined.csv")
-                dataset_time = time.time() - dataset_start
-                print(f"✅ 명언 데이터셋 로드 완료 ({len(self.quotes_df)}개 명언, {dataset_time:.2f}초)")
+                return self.state
                 
-                # 시스템 활성화
-                self.embedding_system_available = True
-                EMBEDDING_AVAILABLE = True
-                EMBEDDING_LOADING = False
-                
-                total_time = time.time() - start_time
-                print(f"🎉 임베딩 시스템 완전 활성화! (총 소요시간: {total_time:.2f}초)")
-                print(f"📊 시간 분석: Import({import_time:.2f}s) + FAISS({faiss_time:.2f}s) + Model({model_time:.2f}s) + Dataset({dataset_time:.2f}s)")
-                
-            except Exception as e:
-                error_time = time.time() - start_time
-                print(f"❌ 임베딩 시스템 초기화 실패 ({error_time:.2f}초 후): {e}")
-                print(f"❌ 에러 세부사항: {type(e).__name__}: {str(e)}")
-                print("🔄 폴백 시스템 계속 사용")
-                self.embedding_system_available = False
-                EMBEDDING_AVAILABLE = False
-                EMBEDDING_LOADING = False
-        
-        # 백그라운드 스레드 시작
-        init_thread = threading.Thread(target=background_init, daemon=True)
-        init_thread.start()
-        print(f"🚀 백그라운드 임베딩 초기화 스레드 시작됨 (Thread ID: {init_thread.ident})")
-    
-
-    
-    def _get_conversation_context(self):
-        """대화 전체 컨텍스트를 하나의 텍스트로 합치기"""
-        if not self.chat_history.messages:
-            return ""
-        
-        # 사용자 메시지들만 추출하여 감정/상황 컨텍스트 생성
-        user_messages = [
-            msg.content for msg in self.chat_history.messages 
-            if isinstance(msg, HumanMessage)
-        ]
-        
-        # 전체 대화를 하나의 컨텍스트로 결합
-        conversation_context = " ".join(user_messages)
-        
-        return conversation_context
-    
-    def _get_summarized_context_by_llm(self):
-        """LLM을 통한 대화 요약 및 감정 분석"""
-        if not self.chat_history.messages:
-            return ""
-        
-        try:
-            # 전체 대화 히스토리 포맷팅
-            conversation_text = ""
-            for msg in self.chat_history.messages[-8:]:  # 최근 8개 메시지만 사용
-                role = "사용자" if isinstance(msg, HumanMessage) else "챗봇"
-                conversation_text += f"{role}: {msg.content}\n"
-            
-            # LLM에게 대화 요약 요청
-            summary_prompt = f"""
-다음 대화를 분석하여 사용자의 현재 감정 상태와 상황을 30-40단어로 요약해주세요.
-명언 추천을 위한 핵심 키워드와 감정을 포함해서 요약해주세요.
-
-대화 내용:
-{conversation_text}
-
-요약 (30-40단어):"""
-
-            # Solar API로 요약 생성
-            summary_response = self.llm.invoke(summary_prompt)
-            summarized_context = str(summary_response.content).strip()
-            
-            print(f"🧠 LLM 대화 요약: {summarized_context}")
-            return summarized_context
-            
         except Exception as e:
-            print(f"⚠️ LLM 요약 실패: {e}")
-            # 폴백: 기존 단순 결합 방식 사용
-            return self._get_conversation_context()
-    
-    def get_personalized_quote(self):
-        """대화 컨텍스트 기반 개인화된 명언 검색"""
-        if not self.embedding_system_available:
-            # 임베딩 시스템 사용 불가 시 폴백
-            return random.choice(self.fallback_quotes)
-        
-        try:
-            # LLM을 통한 대화 요약 사용
-            conversation_context = self._get_summarized_context_by_llm()
-            
-            if not conversation_context.strip():
-                # 컨텍스트가 없으면 폴백
-                return random.choice(self.fallback_quotes)
-            
-            print(f"🔍 명언 검색 컨텍스트: {conversation_context}")
-            
-            # 요약된 대화를 임베딩으로 변환
-            user_embedding = self.embedding_model.encode([conversation_context], convert_to_tensor=False)
-            user_embedding = user_embedding / np.linalg.norm(user_embedding)  # 정규화
-            
-            # FAISS 검색 (코사인 유사도)
-            distances, indices = self.faiss_index.search(np.array(user_embedding), 1)
-            
-            # 가장 유사한 명언 선택
-            best_match_idx = indices[0][0]
-            similarity_score = distances[0][0]
-            
-            quote_text = self.quotes_df["quote"].iloc[best_match_idx]
-            quote_author = self.quotes_df["author"].iloc[best_match_idx]
-            quote_category = self.quotes_df["category"].iloc[best_match_idx]
-            
-            print(f"✨ 임베딩 기반 명언 선택: {quote_text[:50]}... (유사도: {similarity_score:.4f})")
-            
+            print(f"❌ 챗봇 실행 오류: {e}")
             return {
-                "text": quote_text,
-                "author": quote_author,
-                "category": quote_category,
-                "similarity": float(similarity_score),
-                "method": "llm_summary_embedding_search",
-                "summary_context": conversation_context
+                **self.state,
+                "chatbot_message": "죄송해요, 지금 대화하는데 문제가 생겼어요. 잠시 후 다시 시도해주시겠어요?",
+                "status": "error"
             }
-            
-        except Exception as e:
-            print(f"❌ 임베딩 검색 실패: {e}")
-            print("🔄 폴백 시스템 사용")
-            fallback_quote = random.choice(self.fallback_quotes)
-            fallback_quote["method"] = "fallback_random"
-            return fallback_quote
     
-    def chat_once(self, user_input):
-        """사용자 입력을 받아 Solar API로 응답을 생성합니다."""
-        try:
-            # 대화 히스토리 포맷팅
-            formatted_history = ""
-            if self.chat_history.messages:
-                formatted_history = "\n".join([
-                    f"{'User' if isinstance(msg, HumanMessage) else 'Assistant'}: {msg.content}"
-                    for msg in self.chat_history.messages[-6:]  # 최근 6개 메시지만 사용
-                ])
-            
-            # 프롬프트 생성
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", SYSTEM_PROMPT),
-                ("user", "{user_input}")
-            ])
-            
-            # Solar API 호출
-            chain = prompt | self.llm
-            full_input = f"{formatted_history}\n\nUser: {user_input}" if formatted_history else user_input
-            
-            response = chain.invoke({
-                "user_input": full_input
-            })
-            
-            ai_response = str(response.content)
-            
-            # 채팅 히스토리에 추가
-            self.chat_history.add_messages([
-                HumanMessage(content=user_input),
-                AIMessage(content=ai_response)
-            ])
-            
-            self.conversation_count += 1
-            
-            return ai_response
-            
-        except Exception as e:
-            print(f"Solar API 에러: {e}")
-            return "죄송해요, 지금 대화하는데 문제가 생겼어요. 잠시 후 다시 시도해주시겠어요?"
-    
-    def get_user_messages(self):
-        """사용자 메시지 목록 반환"""
-        return [msg.content for msg in self.chat_history.messages if isinstance(msg, HumanMessage)]
-    
-    def get_ai_messages(self):
-        """AI 메시지 목록 반환"""
-        return [msg.content for msg in self.chat_history.messages if isinstance(msg, AIMessage)]
+    def get_conversation_summary(self):
+        """대화 요약 정보 반환"""
+        return {
+            "message_count": len(self.state["chat_history"].messages),
+            "analysis_ready": len(self.state["chat_history"].messages) >= 10,
+            "quote_selection_mode": self.quote_selection_mode,
+            "quote_selected": bool(self.state.get("quote")),
+            "advice": self.state.get("advice", ""),
+            "keywords": self.state.get("keywords", [])
+        }
 
 # 챗봇 인스턴스들을 저장할 딕셔너리
 chatbot_sessions = {}
 session_lock = threading.Lock()
 
 def get_chatbot_instance(user_id, thread_num):
-    """사용자별 Solar 챗봇 인스턴스 가져오기 또는 생성"""
+    """사용자별 Enhanced Solar 챗봇 인스턴스 가져오기 또는 생성"""
     session_key = f"{user_id}_{thread_num}"
     
     with session_lock:
         if session_key not in chatbot_sessions:
             chatbot_sessions[session_key] = {
-                'chatbot': SolarChatbot(),
+                'chatbot': EnhancedSolarChatbot(),
                 'created_at': datetime.now(),
                 'last_used': datetime.now()
             }
-            print(f"🚀 새로운 Solar 챗봇 세션 생성: {session_key}")
+            print(f"🚀 새로운 Enhanced Solar 챗봇 세션 생성: {session_key}")
         else:
             chatbot_sessions[session_key]['last_used'] = datetime.now()
     
@@ -375,28 +513,29 @@ def health_check():
     # 임베딩 시스템 상태 결정
     if EMBEDDING_AVAILABLE:
         embedding_status = "✅ ACTIVE"
-        message = "🎉 Solar API + 개인화 명언 추천 시스템 완전 활성화!"
+        message = "🎉 Solar API + LangGraph + 개인화 명언 추천 시스템 완전 활성화!"
     elif EMBEDDING_LOADING:
         embedding_status = "🔄 LOADING"
-        message = "📥 Solar API 동작 중 + 임베딩 시스템 백그라운드 로딩 중..."
+        message = "📥 Solar API + LangGraph 동작 중 + 임베딩 시스템 백그라운드 로딩 중..."
     else:
         embedding_status = "⚠️ FALLBACK"
-        message = "🔥 Solar API 동작 중 + 기본 명언 시스템 사용"
+        message = "🔥 Solar API + LangGraph 동작 중 + 기본 명언 시스템 사용"
     
     return jsonify({
         'status': 'OK',
         'timestamp': datetime.now().isoformat(),
         'activeConversations': len(chatbot_sessions),
-        'model': 'Solar Pro API',
+        'model': 'Solar Pro API + LangGraph',
         'embedding_system': embedding_status,
         'embedding_available': EMBEDDING_AVAILABLE,
         'embedding_loading': EMBEDDING_LOADING,
+        'quote_retriever_available': QUOTE_RETRIEVER_AVAILABLE,
         'message': message
     })
 
 @app.route('/api/chat/send', methods=['POST'])
 def send_message():
-    """메시지 전송 API - 실제 Solar API + 임베딩 검색 사용"""
+    """메시지 전송 API - LangGraph 기반 Enhanced Solar 챗봇 사용"""
     try:
         data = request.get_json()
         
@@ -410,42 +549,51 @@ def send_message():
         thread_num = data['threadNum']
         content = data['content']
         
-        print(f"🤖 Solar API 호출 - User: {user_id}, Message: {content}")
+        print(f"🤖 Enhanced Solar API 호출 - User: {user_id}, Message: {content}")
         
-        # Solar 챗봇 인스턴스 가져오기
+        # Enhanced Solar 챗봇 인스턴스 가져오기
         chatbot = get_chatbot_instance(user_id, thread_num)
         
-        # Solar API로 응답 생성
-        ai_response = chatbot.chat_once(content)
+        # LangGraph로 응답 생성
+        result_state = chatbot.run_chatbot_once(content, user_id, thread_num)
         
-        print(f"✨ Solar API 응답: {ai_response}")
+        ai_response = result_state.get('chatbot_message', '응답을 생성할 수 없습니다.')
+        print(f"✨ Enhanced Solar API 응답: {ai_response}")
         
         # 응답 데이터 구성
         response_data = {
             'userId': user_id,
             'threadNum': thread_num,
-            'timestamp': datetime.now().isoformat(),
-            'status': 'completed',
+            'timestamp': result_state.get('timestamp', datetime.now().isoformat()),
+            'status': result_state.get('status', 'completed'),
             'content': ai_response,
             'quote': None,
-            'model': 'Solar Pro',
-            'embedding_system': 'FAISS'
+            'model': 'Solar Pro + LangGraph',
+            'embedding_system': 'Enhanced FAISS',
+            'conversation_summary': chatbot.get_conversation_summary()
         }
         
-        # 대화 횟수 확인 (4번째 대화 시 개인화된 명언 생성)
-        user_messages = chatbot.get_user_messages()
-        if len(user_messages) >= 4:
-            quote = chatbot.get_personalized_quote()
+        # 명언 선택이 완료된 경우
+        if result_state.get('quote_selection_complete') and result_state.get('quote'):
             response_data['quote'] = {
                 'id': str(uuid.uuid4()),
-                'text': quote['text'],
-                'author': quote['author'],
-                'category': quote['category'],
-                'similarity': quote.get('similarity', 0.0),
-                'method': quote.get('method', 'unknown')
+                'text': result_state['quote'],
+                'author': result_state['author'],
+                'advice': result_state.get('advice', ''),
+                'keywords': result_state.get('keywords', []),
+                'method': 'langgraph_enhanced_selection'
             }
-            print(f"📜 개인화된 명언 생성: {quote['text'][:50]}... - {quote['author']}")
-            print(f"🔍 선택 방법: {quote.get('method', 'unknown')}")
+            print(f"📜 최종 명언 선택 완료: {result_state['quote'][:50]}... - {result_state['author']}")
+            print(f"🎯 조언: {result_state.get('advice', '')}")
+            print(f"🔑 키워드: {result_state.get('keywords', [])}")
+        
+        # 10턴 분석 완료 시 추가 정보
+        if len(result_state.get('chat_history', ChatMessageHistory()).messages) >= 10:
+            if result_state.get('advice'):
+                response_data['analysis_complete'] = True
+                response_data['advice'] = result_state.get('advice', '')
+                response_data['keywords'] = result_state.get('keywords', [])
+                print(f"🎉 10턴 분석 완료 - 조언: {result_state.get('advice', '')}")
         
         return jsonify(response_data)
         
@@ -455,7 +603,7 @@ def send_message():
             'error': str(e),
             'status': 'error',
             'timestamp': datetime.now().isoformat(),
-            'model': 'Solar Pro'
+            'model': 'Solar Pro + LangGraph'
         }), 500
 
 @app.route('/api/chat/status', methods=['GET'])
@@ -474,30 +622,23 @@ def get_status():
         if session_key in chatbot_sessions:
             chatbot = chatbot_sessions[session_key]['chatbot']
             
-            # 최근 AI 응답 가져오기
-            ai_messages = chatbot.get_ai_messages()
-            latest_response = ai_messages[-1] if ai_messages else ""
-            
             return jsonify({
                 'userId': user_id,
                 'threadNum': thread_num,
                 'timestamp': datetime.now().isoformat(),
-                'status': 'completed',
-                'content': latest_response,
-                'quote': None,
-                'model': 'Solar Pro',
-                'embedding_system': 'FAISS'
+                'status': 'active',
+                'model': 'Solar Pro + LangGraph',
+                'embedding_system': 'Enhanced FAISS',
+                'conversation_summary': chatbot.get_conversation_summary()
             })
         else:
             return jsonify({
                 'userId': user_id,
                 'threadNum': thread_num,
                 'timestamp': datetime.now().isoformat(),
-                'status': 'pending',
-                'content': '',
-                'quote': None,
-                'model': 'Solar Pro',
-                'embedding_system': 'FAISS'
+                'status': 'inactive',
+                'model': 'Solar Pro + LangGraph',
+                'embedding_system': 'Enhanced FAISS'
             })
             
     except Exception as e:
@@ -505,17 +646,18 @@ def get_status():
             'error': str(e),
             'status': 'error',
             'timestamp': datetime.now().isoformat(),
-            'model': 'Solar Pro'
+            'model': 'Solar Pro + LangGraph'
         }), 500
 
 if __name__ == '__main__':
-    print("🚀 Solar API + 임베딩 기반 LLM 서버 시작 중...")
+    print("🚀 Enhanced Solar API + LangGraph 서버 시작 중...")
     print("📡 포트: 3001")
-    print("🔥 모델: Solar Pro API")
-    print("🧠 임베딩: SentenceTransformer + FAISS")
-    print("📊 데이터셋: quotes_with_insights_combined.csv")
-    print("🔧 디버그 모드: True")
+    print("🔥 모델: Solar Pro API + LangGraph StateGraph")
+    print("🧠 임베딩: Enhanced SentenceTransformer + FAISS")
+    print("📊 명언 검색: utils.quote_retriever")
+    print("🎯 분석: 10턴 기반 대화 분석 + 명언 선택")
+    print("🔧 디버그 모드: False")
     print("🌐 CORS 활성화됨")
-    print("✨ 개인화된 명언 추천 시스템!")
+    print("✨ LangGraph 기반 개인화된 명언 추천 시스템!")
     
     app.run(host='0.0.0.0', port=3001, debug=False, use_reloader=False)

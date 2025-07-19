@@ -80,21 +80,24 @@ export const useChat = () => {
     };
   }, []);
 
-  const addMessage = useCallback((content: string, isBot: boolean = false): ChatMessage => {
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      content,
-      isBot,
-      timestamp: new Date(),
-    };
+  const addMessage = useCallback(
+    (content: string, isBot: boolean = false): ChatMessage => {
+      const newMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content,
+        isBot,
+        timestamp: new Date(),
+      };
 
-    setChatState((prev) => ({
-      ...prev,
-      messages: [...prev.messages, newMessage],
-    }));
+      setChatState((prev) => ({
+        ...prev,
+        messages: [...prev.messages, newMessage],
+      }));
 
-    return newMessage;
-  }, []);
+      return newMessage;
+    },
+    []
+  );
 
   const updateLastBotMessage = useCallback((content: string) => {
     setChatState((prev) => {
@@ -194,12 +197,15 @@ export const useChat = () => {
               },
               (error) => {
                 console.error("Streaming error:", error);
-                addMessage("죄송합니다. 응답을 받아오는 중 문제가 발생했습니다.", true);
+                addMessage(
+                  "죄송합니다. 응답을 받아오는 중 문제가 발생했습니다.",
+                  true
+                );
                 setChatState((prev) => ({ ...prev, isLoading: false }));
               },
               () => {
                 setChatState((prev) => ({ ...prev, isLoading: false }));
-              },
+              }
             );
           } else {
             // 폴링 모드
@@ -224,9 +230,12 @@ export const useChat = () => {
               },
               (error) => {
                 console.error("Polling error:", error);
-                addMessage("죄송합니다. 응답을 받아오는 중 문제가 발생했습니다.", true);
+                addMessage(
+                  "죄송합니다. 응답을 받아오는 중 문제가 발생했습니다.",
+                  true
+                );
                 setChatState((prev) => ({ ...prev, isLoading: false }));
-              },
+              }
             );
           }
         }
@@ -254,44 +263,81 @@ export const useChat = () => {
                 break;
               case 3:
                 botResponse =
+                  "많은 것을 이야기해주시는군요. 계속 들어보고 싶어요.";
+                break;
+              case 4:
+                botResponse =
+                  "정말 깊이 있는 이야기네요. 더 나누고 싶은 말씀이 있으신가요?";
+                break;
+              case 5:
+                botResponse =
+                  "당신의 마음을 잘 이해할 수 있을 것 같아요. 조금 더 들려주세요.";
+                break;
+              case 6:
+                botResponse =
+                  "이런 감정들이 자연스러운 것 같아요. 어떻게 극복하고 계신가요?";
+                break;
+              case 7:
+                botResponse =
+                  "정말 용기 있는 분이시군요. 그 마음이 전해집니다.";
+                break;
+              case 8:
+                botResponse =
+                  "많은 이야기를 나누어주셔서 감사해요. 마지막으로 하고 싶은 말씀이 있나요?";
+                break;
+              case 9:
+                botResponse =
                   "충분히 이해됩니다. 당신의 마음을 어루만져줄 수 있는 따뜻한 말을 전해드릴게요.";
 
-                // 3단계에서는 봇 응답 후 명언 생성 중 표시
+                // 9단계(10번째 대화)에서 명언 분석 시작
                 setTimeout(() => {
-                  // 명언 생성 중 로딩 버블 추가
-                  const loadingMessage = addMessage("", true);
+                  addMessage("🔍 당신의 이야기를 분석하고 있습니다...", true);
 
-                  // 1.5초 후 명언 제공
                   setTimeout(() => {
-                    // 로딩 버블 제거
-                    setChatState((prev) => ({
-                      ...prev,
-                      messages: prev.messages.filter((msg) => msg.id !== loadingMessage.id),
-                    }));
+                    addMessage("💭 맞춤 조언을 준비하고 있습니다...", true);
 
-                    // 명언 추가
-                    const quote = mockQuotes[Math.floor(Math.random() * mockQuotes.length)];
-                    const quoteMessage = `${quote.text} — ${quote.author}`;
-                    addMessage(quoteMessage, true);
-                    setChatState((prev) => ({
-                      ...prev,
-                      selectedQuote: quote,
-                    }));
-                  }, 1500);
+                    setTimeout(() => {
+                      addMessage("✨ 3개의 명언 후보를 찾았습니다!", true);
+
+                      setTimeout(() => {
+                        // 더 다양한 명언 제시
+                        const selectedQuote =
+                          mockQuotes[
+                            Math.floor(Math.random() * mockQuotes.length)
+                          ];
+                        addMessage(
+                          `다음 명언은 어떠신가요?\n\n💬 "${selectedQuote.text}"\n✍️ 저자: ${selectedQuote.author}\n📊 유사도: 0.892\n\n이 명언을 선택하시겠습니까? (예/아니오)`,
+                          true
+                        );
+
+                        // 명언 선택 모드로 전환
+                        setChatState((prev) => ({
+                          ...prev,
+                          selectedQuote: selectedQuote,
+                        }));
+                      }, 1000);
+                    }, 1000);
+                  }, 1000);
                 }, 500);
                 break;
               default:
-                botResponse = "답변을 생성하고 있습니다...";
+                if (currentStep < 9) {
+                  botResponse = "네, 계속 이야기해주세요. 잘 듣고 있어요.";
+                } else {
+                  botResponse = "답변을 생성하고 있습니다...";
+                }
             }
 
-            addMessage(botResponse, true);
+            if (currentStep < 9) {
+              addMessage(botResponse, true);
+            }
             setChatState((prev) => ({ ...prev, isLoading: false }));
           }, 1500);
         } else {
           // 프로덕션 환경에서는 에러 메시지만 표시
           addMessage(
             "죄송합니다. 서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.",
-            true,
+            true
           );
           setChatState((prev) => ({ ...prev, isLoading: false }));
         }
@@ -310,7 +356,7 @@ export const useChat = () => {
       updateLastBotMessage,
       userId,
       threadNum,
-    ],
+    ]
   );
 
   const confirmQuote = useCallback(() => {
@@ -328,7 +374,8 @@ export const useChat = () => {
 
     // 새로운 명언 요청 API 호출 (간단 구현)
     setTimeout(() => {
-      const newQuote = mockQuotes[Math.floor(Math.random() * mockQuotes.length)];
+      const newQuote =
+        mockQuotes[Math.floor(Math.random() * mockQuotes.length)];
       const quoteMessage = `${newQuote.text} — ${newQuote.author}`;
 
       addMessage(quoteMessage, true);

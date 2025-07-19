@@ -68,21 +68,13 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
   const shouldShowConfirmButtons = () => {
     return (
       chatState.selectedQuote &&
-      chatState.currentStep >= 4 &&
+      chatState.currentStep >= 10 &&
       !chatState.isLoading
     );
   };
 
   const shouldShowInput = () => {
-    return !chatState.isLoading && chatState.currentStep < 4;
-  };
-
-  const getLastQuoteMessage = () => {
-    const quoteMessages = chatState.messages.filter(
-      (msg) =>
-        msg.isBot && (msg.content.includes('"') || msg.content.includes("—"))
-    );
-    return quoteMessages[quoteMessages.length - 1];
+    return !chatState.isLoading && chatState.currentStep < 10;
   };
 
   return (
@@ -112,7 +104,7 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
             })}
 
             {/* 로딩 중일 때 로딩 버블 표시 */}
-            {chatState.isLoading && chatState.currentStep < 4 && (
+            {chatState.isLoading && chatState.currentStep < 10 && (
               <ChatBubble
                 message={{
                   id: "loading",
@@ -148,7 +140,7 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
 
         {/* 로딩 오버레이 */}
         <LoadingOverlay
-          isVisible={chatState.isLoading && chatState.currentStep >= 4}
+          isVisible={chatState.isLoading && chatState.currentStep >= 10}
           message="당신만을 위한 명언을"
           subMessage="준비하고 있습니다."
         />
