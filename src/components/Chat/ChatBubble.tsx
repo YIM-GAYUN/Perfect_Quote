@@ -35,10 +35,14 @@ const BubbleIcon = styled.div<{ $isBot: boolean }>`
 const BubbleContent = styled.div<{ $isBot: boolean }>`
   max-width: ${(props) => (props.$isBot ? "calc(100% - 80px)" : "70%")};
   min-width: 100px;
-  background-color: ${(props) => (props.$isBot ? theme.colors.secondary : theme.colors.primary)};
-  color: ${(props) => (props.$isBot ? theme.colors.text.primary : theme.colors.secondary)};
-  border: ${(props) => (props.$isBot ? `3px solid ${theme.colors.primary}` : "none")};
-  border-radius: ${(props) => (props.$isBot ? "40px 40px 40px 0px" : "40px 40px 0px 40px")};
+  background-color: ${(props) =>
+    props.$isBot ? theme.colors.secondary : theme.colors.primary};
+  color: ${(props) =>
+    props.$isBot ? theme.colors.text.primary : theme.colors.secondary};
+  border: ${(props) =>
+    props.$isBot ? `3px solid ${theme.colors.primary}` : "none"};
+  border-radius: ${(props) =>
+    props.$isBot ? "40px 40px 40px 0px" : "40px 40px 0px 40px"};
   padding: ${theme.spacing.md} ${theme.spacing.lg};
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -52,7 +56,7 @@ const BubbleContent = styled.div<{ $isBot: boolean }>`
 `;
 
 const BubbleText = styled.p<{ $isBot: boolean }>`
-  font-family: ${(props) => 
+  font-family: ${(props) =>
     props.$isBot ? theme.fonts.korean.chatbot : theme.fonts.korean.primary};
   font-size: ${theme.fontSizes.large};
   line-height: 1.5;

@@ -1,0 +1,36 @@
+---
+alwaysApply: true
+description: "Local embedding models usage guidelines for quote generator"
+---
+
+# 로컬 임베딩 모델 사용 규칙
+
+## 🎯 핵심 규칙
+- **무조건 로컬에 저장된 `/models/sentence-transformers/` 임베딩 모델을 사용해야 한다**
+- 온라인 다운로드는 절대 금지한다
+- 모델 로딩 실패 시에만 fallback 전략을 사용한다
+
+## 📂 모델 경로 및 설정
+- 기본 모델 경로: `./models/sentence-transformers/paraphrase-multilingual-mpnet-base-v2/`
+- SentenceTransformer 초기화 시 반드시 `cache_folder` 파라미터 사용
+- 예시: `SentenceTransformer('paraphrase-multilingual-mpnet-base-v2', cache_folder='./models/sentence-transformers')`
+
+## ⚡ 성능 최적화 규칙
+- 백그라운드 로딩 시 메인 스레드 블로킹 방지
+- 모델 로딩 완료까지 health check API에서 상태 반영
+- 임베딩 시스템 초기화 중에는 fallback 응답 제공
+
+## 🔍 검증 및 에러 처리
+- 서버 시작 시 로컬 모델 존재 여부 검증
+- 모델 로딩 실패 시 명확한 에러 메시지 출력
+- FAISS 인덱스와 데이터셋 파일 존재 여부 확인
+
+## 🚫 금지 사항
+- Hugging Face Hub에서 자동 다운로드 금지
+- 임베딩 시스템 완전 비활성화 금지
+- 모델 경로 하드코딩 (상대 경로 사용)
+
+## 📝 관련 파일
+- 메인 서버: [app.py](mdc:app.py)
+- 모델 다운로드: [download_models.py](mdc:download_models.py)
+- 임베딩 검색: [quote_embedding/quote_similarity_search.py](mdc:quote_embedding/quote_similarity_search.py)
