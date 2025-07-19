@@ -206,8 +206,9 @@ def get_status():
 
 if __name__ == '__main__':
     print("🚀 Flask API 서버 시작 중...")
-    print("📡 포트: 3001")
+    print("📡 포트: 3002")
     print("🔧 디버그 모드: True")
     print("🌐 CORS 활성화됨")
+    print("⚠️  Mock 서버(3001)와 포트 분리됨")
     
-    app.run(host='0.0.0.0', port=3001, debug=True)
+    app.run(host='0.0.0.0', port=3002, debug=True)
