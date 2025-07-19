@@ -166,10 +166,12 @@ def chatbot(state: ChatbotState) -> ChatbotState:
         
         if result["quotes"]:
             quotes = result["quotes"]
+            print("[DEBUG] quotes: ", quotes)
             first_quote = quotes[0]
             
             quote_message = f"\n\n대화 내용을 분석해서 관련 명언을 찾았어요!\n\n\"{first_quote['quote']}\"\n작가: {first_quote['author']}\n유사도: {first_quote['similarity']:.3f}\n\n이 명언을 선택하시겠습니까? (예/아니오)"
-            
+            print("[DEBUG] quote_message: ", quote_message)
+
             # 명언 추천 메시지 추가
             state["chat_history"].add_ai_message(quote_message)
             
