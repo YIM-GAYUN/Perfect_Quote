@@ -51,6 +51,7 @@ const TextArea = styled.textarea`
   }
 
   @media (max-width: ${theme.breakpoints.mobile}) {
+    font-family: ${theme.fonts.korean.chatbot};
     font-size: ${theme.fontSizes.medium};
     padding: ${theme.spacing.sm} ${theme.spacing.md};
     min-height: 60px;

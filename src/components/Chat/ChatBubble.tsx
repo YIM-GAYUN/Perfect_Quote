@@ -52,7 +52,8 @@ const BubbleContent = styled.div<{ $isBot: boolean }>`
 `;
 
 const BubbleText = styled.p<{ $isBot: boolean }>`
-  font-family: ${(props) => (props.$isBot ? theme.fonts.korean.chatbot : theme.fonts.english.mono)};
+  font-family: ${(props) => 
+    props.$isBot ? theme.fonts.korean.chatbot : theme.fonts.korean.primary};
   font-size: ${theme.fontSizes.large};
   line-height: 1.5;
   margin: 0;
