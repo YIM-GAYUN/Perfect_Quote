@@ -173,7 +173,7 @@ def analyze_chat_history(state: ChatbotState) -> ChatbotState:
 
     # 대화 턴 수가 TURN_THRESHOLD 이상이면 분석을 한다.
     if len(chat_history.messages) < TURN_THRESHOLD:
-        raise ValueError("Chat history must be at least 10 messages")
+        raise ValueError(f"Chat history must be at least {TURN_THRESHOLD} messages")
     
     # 분석 체인을 생성하고 실행한다.
     analysis_chain = _build_analysis_chain()
