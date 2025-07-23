@@ -39,6 +39,9 @@ import numpy as np
 EMBEDDING_AVAILABLE = False
 EMBEDDING_LOADING = False
 
+# 대화 턴 수 임계값
+TURN_THRESHOLD = 20
+
 # 강제로 임베딩 시스템 활성화
 EMBEDDING_LIBS_AVAILABLE = True
 print("🔧 임베딩 시스템 강제 활성화")
@@ -168,8 +171,8 @@ def _build_analysis_chain():
 def analyze_chat_history(state: ChatbotState) -> ChatbotState:
     chat_history = state["chat_history"]
 
-    # 대화 턴 수가 10턴 이상이면 분석을 한다.
-    if len(chat_history.messages) < 10:
+    # 대화 턴 수가 TURN_THRESHOLD 이상이면 분석을 한다.
+    if len(chat_history.messages) < TURN_THRESHOLD:
         raise ValueError("Chat history must be at least 10 messages")
     
     # 분석 체인을 생성하고 실행한다.
@@ -357,10 +360,10 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
 
 # === 분기 엣지 정의 ===
 def should_analyze_chat_history(state: ChatbotState) -> str:
-    if len(state["chat_history"].messages) >= 10:
-        return "messages >= 10"
+    if len(state["chat_history"].messages) >= TURN_THRESHOLD:
+        return f"messages >= {TURN_THRESHOLD}"
     else:
-        return "messages < 10"
+        return f"messages < {TURN_THRESHOLD}"
 
 # === LangGraph 워크플로우 구성 ===
 workflow = StateGraph(ChatbotState)
@@ -382,8 +385,8 @@ workflow.add_conditional_edges(
     "save_history",
     should_analyze_chat_history,
     path_map={
-        "messages >= 10": "analyze_chat_history",
-        "messages < 10": END
+        f"messages >= {TURN_THRESHOLD}": "analyze_chat_history",
+        f"messages < {TURN_THRESHOLD}": END
     }
 )
 
@@ -453,9 +456,9 @@ class EnhancedSolarChatbot:
                 self.state.update(result)
                 
                 # 10턴 후 분석이 완료되었는지 확인
-                if len(self.state["chat_history"].messages) >= 10:
+                if len(self.state["chat_history"].messages) >= TURN_THRESHOLD:
                     if self.state.get('advice') and self.state.get('keywords'):
-                        print("🎉 10턴 대화 완료 - 분석 결과 준비됨")
+                        print(f"🎉 {TURN_THRESHOLD}턴 대화 완료 - 분석 결과 준비됨")
                         
                         # 명언 선택 모드 시작
                         if self.state.get('candidate_quotes'):
@@ -477,7 +480,7 @@ class EnhancedSolarChatbot:
         """대화 요약 정보 반환"""
         return {
             "message_count": len(self.state["chat_history"].messages),
-            "analysis_ready": len(self.state["chat_history"].messages) >= 10,
+            "analysis_ready": len(self.state["chat_history"].messages) >= TURN_THRESHOLD,
             "quote_selection_mode": self.quote_selection_mode,
             "quote_selected": bool(self.state.get("quote")),
             "advice": self.state.get("advice", ""),
@@ -588,12 +591,12 @@ def send_message():
             print(f"🔑 키워드: {result_state.get('keywords', [])}")
         
         # 10턴 분석 완료 시 추가 정보
-        if len(result_state.get('chat_history', ChatMessageHistory()).messages) >= 10:
+        if len(result_state.get('chat_history', ChatMessageHistory()).messages) >= TURN_THRESHOLD:
             if result_state.get('advice'):
                 response_data['analysis_complete'] = True
                 response_data['advice'] = result_state.get('advice', '')
                 response_data['keywords'] = result_state.get('keywords', [])
-                print(f"🎉 10턴 분석 완료 - 조언: {result_state.get('advice', '')}")
+                print(f"🎉 대화 분석 완료 - 조언: {result_state.get('advice', '')}")
         
         return jsonify(response_data)
         
@@ -655,7 +658,7 @@ if __name__ == '__main__':
     print("🔥 모델: Solar Pro API + LangGraph StateGraph")
     print("🧠 임베딩: Enhanced SentenceTransformer + FAISS")
     print("📊 명언 검색: utils.quote_retriever")
-    print("🎯 분석: 10턴 기반 대화 분석 + 명언 선택")
+    print("🎯 분석: 대화 내용 분석 + 명언 선택")
     print("🔧 디버그 모드: False")
     print("🌐 CORS 활성화됨")
     print("✨ LangGraph 기반 개인화된 명언 추천 시스템!")
