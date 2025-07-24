@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 
 # 시스템 프롬프트 import
 from utils.system_prompt import SYSTEM_PROMPT
+from utils.checklist_prompt import CHECKLIST_PROMPT
 from utils.analysis_prompt import ANALYSIS_PROMPT
 
 # 명언 검색 시스템
@@ -165,19 +166,51 @@ def _build_analysis_chain():
     chain = prompt | llm
     return chain
 
+# def analyze_chat_history(state: ChatbotState) -> ChatbotState:
+#     chat_history = state["chat_history"]
+
+#     # 대화 턴 수가 10턴 이상이면 분석을 한다.
+#     if len(chat_history.messages) < 10:
+#         raise ValueError("Chat history must be at least 10 messages")
+    
+#     # 분석 체인을 생성하고 실행한다.
+#     analysis_chain = _build_analysis_chain()
+#     analysis_response = analysis_chain.invoke({
+#         "chat_history": str(chat_history)
+#     })
+#     chat_analysis = analysis_response.content
+#     return {
+#         **state,
+#         "chat_analysis": str(chat_analysis)
+#     }
+
+# 개선 코드 - 0724 다훈
 def analyze_chat_history(state: ChatbotState) -> ChatbotState:
     chat_history = state["chat_history"]
 
-    # 대화 턴 수가 10턴 이상이면 분석을 한다.
-    if len(chat_history.messages) < 10:
-        raise ValueError("Chat history must be at least 10 messages")
+    if len(chat_history.messages) < 4:  # 최소한의 대화 필요
+        raise ValueError("대화가 너무 짧아 분석을 시작할 수 없습니다.")
+
+    # 프롬프트 구성
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", CHECKLIST_PROMPT),
+        ("user", "{chat_history}")
+    ])
+    llm = _init_llm()
+    chain = prompt | llm
+    result = chain.invoke({"chat_history": str(chat_history)})
     
-    # 분석 체인을 생성하고 실행한다.
+    result_text = result.content.strip().lower()
+
+    if "파악됨" not in result_text:
+        print("⏳ 아직 사용자의 이야기가 충분히 파악되지 않음")
+        raise ValueError("이야기 파악 불충분")
+
+    # 기존 분석 로직 그대로 수행
     analysis_chain = _build_analysis_chain()
-    analysis_response = analysis_chain.invoke({
-        "chat_history": str(chat_history)
-    })
+    analysis_response = analysis_chain.invoke({"chat_history": str(chat_history)})
     chat_analysis = analysis_response.content
+
     return {
         **state,
         "chat_analysis": str(chat_analysis)
@@ -451,13 +484,13 @@ class EnhancedSolarChatbot:
                 # 일반 대화 모드 - LangGraph 실행
                 result = graph.invoke(self.state)
                 self.state.update(result)
-                
-                # 10턴 후 분석이 완료되었는지 확인
-                if len(self.state["chat_history"].messages) >= 10:
+
+                # 기존: 10턴 기준
+                # 개선: chat_analysis 존재 여부 기준
+                if self.state.get("chat_analysis"):
                     if self.state.get('advice') and self.state.get('keywords'):
-                        print("🎉 10턴 대화 완료 - 분석 결과 준비됨")
-                        
-                        # 명언 선택 모드 시작
+                        print("🎉 이야기 파악 완료 - 분석 결과 준비됨")
+
                         if self.state.get('candidate_quotes'):
                             print("🔄 명언 선택 모드 시작")
                             self.state = present_quote(self.state)

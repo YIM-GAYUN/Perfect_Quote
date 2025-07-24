@@ -17,6 +17,8 @@ export interface ChatState {
   currentStep: number;
   isLoading: boolean;
   selectedQuote?: Quote;
+  quote_selection_mode: boolean;
+  quote_selected: boolean;
 }
 
 export interface NavigationItem {

@@ -42,12 +42,20 @@ interface QuoteGeneratorProps {
 const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
   const { chatState, sendMessage, confirmQuote, rejectQuote } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
 
   // 새 메시지가 추가될 때마다 스크롤을 아래로
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatState.messages]);
+
+  // AI 응답 도착 시 입력창에 자동 포커스
+  useEffect(() => {
+    if (!chatState.isLoading && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [chatState.isLoading, chatState.messages.length]);
 
   const handleSendMessage = (message: string) => {
     sendMessage(message);
@@ -65,17 +73,10 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
     rejectQuote();
   };
 
-  const shouldShowConfirmButtons = () => {
-    return (
-      chatState.selectedQuote &&
-      chatState.currentStep >= 10 &&
-      !chatState.isLoading
-    );
-  };
-
-  const shouldShowInput = () => {
-    return !chatState.isLoading && chatState.currentStep < 10;
-  };
+  // 입력창은 항상 렌더링, placeholder만 동적으로 변경
+  const inputPlaceholder = chatState.quote_selection_mode
+    ? "이 명언이 마음에 드시나요? 예 / 아니오로 답해주세요"
+    : "지금 어떤 생각이 드시나요?";
 
   return (
     <Layout currentPage="quote-generator">
@@ -104,7 +105,7 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
             })}
 
             {/* 로딩 중일 때 로딩 버블 표시 */}
-            {chatState.isLoading && chatState.currentStep < 10 && (
+            {chatState.isLoading && (
               <ChatBubble
                 message={{
                   id: "loading",
@@ -117,7 +118,7 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
             )}
 
             {/* 명언 선택 확인 버튼 */}
-            {shouldShowConfirmButtons() && (
+            {chatState.quote_selection_mode && !chatState.quote_selected && (
               <ConfirmButtons
                 onConfirm={handleConfirm}
                 onCancel={handleReject}
@@ -125,18 +126,32 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
               />
             )}
 
+            {/* 명언 선택 후 감사 메시지 UI */}
+            {chatState.quote_selected && (
+              <div
+                className="quote-thanks"
+                style={{
+                  margin: "32px 0",
+                  textAlign: "center",
+                  color: theme.colors.primary,
+                }}
+              >
+                이야기를 나눠줘서 고마워요. 이 명언이 당신에게 위로가 되었길
+                바랄게요.
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </MessageList>
         </MessagesContainer>
 
-        {/* 채팅 입력창 */}
-        {shouldShowInput() && (
-          <ChatInput
-            onSend={handleSendMessage}
-            disabled={chatState.isLoading}
-            placeholder="당신의 사연을 입력해주세요."
-          />
-        )}
+        {/* 채팅 입력창: 항상 렌더링, placeholder/disabled 동적 제어 */}
+        <ChatInput
+          onSend={handleSendMessage}
+          disabled={chatState.isLoading}
+          placeholder={inputPlaceholder}
+          ref={inputRef}
+        />
 
         {/* 로딩 오버레이 */}
         <LoadingOverlay

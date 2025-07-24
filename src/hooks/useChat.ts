@@ -60,6 +60,8 @@ export const useChat = () => {
     currentStep: 0,
     isLoading: false,
     selectedQuote: undefined,
+    quote_selection_mode: false,
+    quote_selected: false,
   });
 
   // API 관련 상태
@@ -158,6 +160,14 @@ export const useChat = () => {
             setChatState((prev) => ({
               ...prev,
               selectedQuote: response.quote,
+              quote_selection_mode: true,
+              quote_selected: false,
+            }));
+          } else {
+            setChatState((prev) => ({
+              ...prev,
+              quote_selection_mode: false,
+              quote_selected: false,
             }));
           }
           setChatState((prev) => ({ ...prev, isLoading: false }));
@@ -359,29 +369,32 @@ export const useChat = () => {
     ]
   );
 
+  // 명언 추천 모드 진입 예시 (selectedQuote가 생기면 quote_selection_mode true)
+  // 명언 최종 선택 시 quote_selected true
   const confirmQuote = useCallback(() => {
     setChatState((prev) => ({ ...prev, isLoading: true }));
-
-    // 실제로는 quote 확정 API를 호출할 수 있음
     setTimeout(() => {
-      setChatState((prev) => ({ ...prev, isLoading: false }));
+      setChatState((prev) => ({
+        ...prev,
+        isLoading: false,
+        quote_selected: true,
+      }));
       // 완료 페이지로 이동하는 로직은 상위 컴포넌트에서 처리
     }, 2000);
   }, []);
-
+  // 명언 거절 시 quote_selection_mode true, quote_selected false 유지
   const rejectQuote = useCallback(() => {
     addMessage("다른 명언을 추천해드릴게요.", true);
-
-    // 새로운 명언 요청 API 호출 (간단 구현)
     setTimeout(() => {
       const newQuote =
         mockQuotes[Math.floor(Math.random() * mockQuotes.length)];
       const quoteMessage = `${newQuote.text} — ${newQuote.author}`;
-
       addMessage(quoteMessage, true);
       setChatState((prev) => ({
         ...prev,
         selectedQuote: newQuote,
+        quote_selection_mode: true,
+        quote_selected: false,
       }));
     }, 1000);
   }, [addMessage]);
@@ -407,6 +420,8 @@ export const useChat = () => {
       currentStep: 0,
       isLoading: false,
       selectedQuote: undefined,
+      quote_selection_mode: false,
+      quote_selected: false,
     });
   }, []);
 

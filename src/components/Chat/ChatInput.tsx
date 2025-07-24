@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, forwardRef } from "react";
 import styled from "styled-components";
 import { theme } from "../../styles/theme";
 import sendingButtonImg from "../../assets/sending-button.png";
@@ -100,74 +100,87 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({
-  onSend,
-  disabled = false,
-  placeholder = "당신의 사연을 입력해주세요.",
-}) => {
-  const [message, setMessage] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
+  (
+    { onSend, disabled = false, placeholder = "당신의 사연을 입력해주세요." },
+    ref
+  ) => {
+    const [message, setMessage] = useState("");
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSubmit = () => {
-    const trimmedMessage = message.trim();
-    if (trimmedMessage && !disabled) {
-      onSend(trimmedMessage);
-      setMessage("");
+    const handleSubmit = () => {
+      const trimmedMessage = message.trim();
+      if (trimmedMessage && !disabled) {
+        onSend(trimmedMessage);
+        setMessage("");
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "76px";
+        }
+      }
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setMessage(e.target.value);
+
+      // Auto-resize textarea
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "76px";
+        const scrollHeight = textareaRef.current.scrollHeight;
+        textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
+      }
+    };
+
+    useEffect(() => {
       if (textareaRef.current) {
         textareaRef.current.style.height = "76px";
       }
-    }
-  };
+    }, []);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
+    const isMessageEmpty = message.trim().length === 0;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value);
+    // ref prop이 있으면 textarea에 연결
+    useEffect(() => {
+      if (ref && typeof ref === "object" && ref !== null) {
+        (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current =
+          textareaRef.current;
+      }
+    }, [ref]);
 
-    // Auto-resize textarea
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "76px";
-      const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
-    }
-  };
+    return (
+      <InputContainer>
+        <InputWrapper>
+          <TextArea
+            ref={textareaRef}
+            value={message}
+            onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
+            placeholder={placeholder}
+            disabled={disabled}
+            rows={1}
+          />
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "76px";
-    }
-  }, []);
-
-  const isMessageEmpty = message.trim().length === 0;
-
-  return (
-    <InputContainer>
-      <InputWrapper>
-        <TextArea
-          ref={textareaRef}
-          value={message}
-          onChange={handleInputChange}
-          onKeyPress={handleKeyPress}
-          placeholder={placeholder}
-          disabled={disabled}
-          rows={1}
-        />
-
-        <SendButton
-          onClick={handleSubmit}
-          $disabled={disabled || isMessageEmpty}
-          disabled={disabled || isMessageEmpty}
-        >
-          <SendButtonImg src={sendingButtonImg} alt="전송" $disabled={disabled || isMessageEmpty} />
-        </SendButton>
-      </InputWrapper>
-    </InputContainer>
-  );
-};
+          <SendButton
+            onClick={handleSubmit}
+            $disabled={disabled || isMessageEmpty}
+            disabled={disabled || isMessageEmpty}
+          >
+            <SendButtonImg
+              src={sendingButtonImg}
+              alt="전송"
+              $disabled={disabled || isMessageEmpty}
+            />
+          </SendButton>
+        </InputWrapper>
+      </InputContainer>
+    );
+  }
+);
 
 export default ChatInput;
