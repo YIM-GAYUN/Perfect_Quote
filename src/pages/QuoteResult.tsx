@@ -30,7 +30,6 @@ const BlurredBackground = styled.div`
   inset: 0;
   width: 100vw;
   height: 100vh;
-  background: url("/src/assets/background-1.png") center/cover;
   filter: blur(10px);
   z-index: 1;
 `;
