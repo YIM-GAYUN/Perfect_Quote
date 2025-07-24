@@ -82,14 +82,14 @@ const BlueLine = styled.div<{ top?: boolean }>`
 
 const DateText = styled.div`
   font-family: ${theme.fonts.korean.date};
-  font-size: 1.9rem;
+  font-size: 2.0rem;
   color: #3a4a7c;
   margin-left: 30px;
 `;
 
 const DayText = styled.div`
   font-family: ${theme.fonts.korean.date};
-  font-size: 1.9rem;
+  font-size: 1.95rem;
   color: #3a4a7c;
   margin-right: 30px;
 `;
@@ -124,7 +124,6 @@ const QuoteText = styled.div`
   margin: 18px auto 0 auto;
   font-family: ${theme.fonts.korean.quote};
   font-size: 1.4rem;
-  font-weight: bold;
   color: #3a4a7c;
   text-align: left;
   white-space: pre-line;
@@ -235,8 +234,8 @@ const GridLogo = styled.img`
 `;
 
 const GridText = styled.div`
-  font-family: ${theme.fonts.korean.quote};
-  font-size: 1rem;
+  font-family: ${theme.fonts.korean.quote_R};
+  font-size: 1.0rem;
   max-width: 400px;
   color: #3a4a7c;
   text-align: left;
@@ -347,7 +346,7 @@ const QuoteResult: React.FC = () => {
     author: "-빅터 위고",
     keywords: ["지침", "고난", "아픔", "위로"],
     contextTop:
-      "몸이 다친 것도 힘든데, 마음까지 지쳐 있는 상태라면 작은 일도 더 크게 느껴질 수 있거든요. 넘어졌다는 사실보다, 요즘 여러 가지로 마음이 무겁고 버티는 게 벅찼던 거 아닐까요? 딱 맞는 말 파이팅 딱 맞는 말 파이팅 딱 맞는 말 파이팅 딱 맞는 말 파이팅 딱 맞는 말 파이팅",
+      "몸이 다친 것도 힘든데, 마음까지 지쳐 있는 상태라면 작은 일도 더 크게 느껴질 수 있거든요. 넘어졌다는 사실보다, 요즘 여러 가지로 마음이 무겁고 버티는 게 벅찼던 거 아닐까요? 딱 맞는 말 파이팅 딱 맞는 말 파이팅 딱 맞는 말 파이팅! 딱 맞는 말 파이팅 딱 맞는 말 파이팅",
     contextBottom: "당신에게 따뜻한 위로가 될 수 있는 말을 전할게요.",
   };
 
@@ -375,10 +374,6 @@ const QuoteResult: React.FC = () => {
   const handleDownload = () => {
     alert("다운로드 기능은 추후 구현될 예정입니다.");
   };
-
-  // 줄 개수 계산 함수
-  const getContextTopLines = (context: string) =>
-    context.split('.').filter(sentence => sentence.trim() !== "").length;
 
   return (
     <Layout>
@@ -413,26 +408,21 @@ const QuoteResult: React.FC = () => {
           <GridSection>
             <GridLines />
             {/* 윗부분 */}
-            <GridContentRow
-              top={0}
-              style={{
-                height: `${getContextTopLines(quoteData.contextTop) * 30}px`
-              }}
-            >
+            <GridContentRow top={0}>
               <GridLogo src={logoMain} alt="logo" />
               <GridText>
                 {quoteData.contextTop
-                  .split('.')
+                  .split(/(?<=[.?!])/)
                   .filter(sentence => sentence.trim() !== "")
                   .map((sentence, idx, arr) => (
                     <React.Fragment key={idx}>
-                      {sentence.trim() + (idx < arr.length - 1 ? '.' : '')}
+                      {sentence.trim()}
                       <br />
                     </React.Fragment>
                   ))}
               </GridText>
             </GridContentRow>
-            {/* 아랫부분 (윗부분 끝에서 30px 아래에서 시작) */}
+            {/* 아랫부분 (고정 위치) */}
             <GridContentRow top={300}>
               <GridLogo src={logoMain} alt="logo" />
               <GridText>{quoteData.contextBottom}</GridText>
