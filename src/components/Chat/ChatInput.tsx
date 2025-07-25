@@ -26,7 +26,6 @@ const InputWrapper = styled.div`
   background-color: ${theme.colors.chat.input};
   border-radius: ${theme.borderRadius.medium};
   overflow: hidden;
-  box-shadow: ${theme.shadows.small};
 `;
 
 const TextArea = styled.textarea`

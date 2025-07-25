@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled, { css } from "styled-components";
 import Layout from "../components/Layout/Layout";
@@ -101,7 +101,7 @@ const QuoteGridWrapper = styled.div`
   height: 170px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
 `;
 
 const QuoteGridImg = styled.img`
@@ -118,8 +118,8 @@ const QuoteGridImg = styled.img`
 const QuoteText = styled.div`
   position: relative;
   z-index: 2;
-  width: 90%;
-  height: 80px;
+  width: 92%;
+  max-height: 100px;
   margin: 18px auto 0 auto;
   font-family: ${theme.fonts.korean.quote};
   font-size: 1.4rem;
@@ -128,17 +128,20 @@ const QuoteText = styled.div`
   white-space: pre-line;
   line-height: 1.5;
   word-break: keep-all;
+  overflow: hidden;
 `;
 
 const AuthorText = styled.div`
   position: relative;
   z-index: 2;
-  margin-top: 3px;
-  margin-left: -300px;
+  margin-top: 18px;
+  margin-left: 30px;
   font-family: ${theme.fonts.korean.quote};
   font-size: 1.1rem;
   color: #3a4a7c;
   text-align: left;
+  width: 90%;
+  max-height: 25px;
 `;
 
 const KeywordRow = styled.div`
@@ -257,7 +260,7 @@ const CloverImg = styled.img`
 
 const CopyrightText = styled.div`
   width: 100%;
-  margin: 30px 0 0 0;
+  margin: 20px 0 0 0;
   font-size: 0.7rem;
   color: #c4c4c4ff;
   text-align: center;
@@ -337,17 +340,57 @@ const DownloadIcon = () => (
 const QuoteResult: React.FC = () => {
   const navigate = useNavigate();
 
+  // 오늘 날짜와 요일 구하기
+  const today = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const dateStr = `${today.getFullYear()}${pad(today.getMonth() + 1)}${pad(today.getDate())}`;
+  const daysKor = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  const dayOfWeekStr = daysKor[today.getDay()];
+
   // 더미 데이터 (실제로는 props나 fetch로 가져올 것)
   const quoteData = {
-    date: "20250802",
-    dayOfWeek: "MONDAY",
-    quote: '"가장 어두운 밤도 결국은 끝나고, 해는 떠오른다."',
-    author: "-빅터 위고",
+    date: dateStr,
+    dayOfWeek: dayOfWeekStr,
+    quote: '"힘내세요"',
+    author: "-빅터 위고와 여러 명의 사람들.. 기타 등등.. 매우 많음.. 테스트용......",
     keywords: ["지침", "고난", "아픔", "위로"],
     contextTop:
       "몸이 다친 것도 힘든데, 마음까지 지쳐 있는 상태라면 작은 일도 더 크게 느껴질 수 있거든요. 넘어졌다는 사실보다, 요즘 여러 가지로 마음이 무겁고 버티는 게 벅찼던 거 아닐까요? 딱 맞는 말 파이팅 딱 맞는 말 파이팅 딱 맞는 말 파이팅! 딱 맞는 말 파이팅 딱 맞는 말 파이팅",
     contextBottom: "당신에게 따뜻한 위로가 될 수 있는 말을 전할게요.",
   };
+
+  // 명언 길이에 따라 font-size 자동 조정
+  const [fontSize, setFontSize] = useState(1.4); // rem 단위
+  const quoteTextRef = useRef<HTMLDivElement>(null);
+
+  // 작가명 길이에 따라 font-size 자동 조정
+  const [authorFontSize, setAuthorFontSize] = useState(1.1); // rem 단위
+  const authorTextRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!quoteTextRef.current) return;
+    const container = quoteTextRef.current;
+    let currentFontSize = 1.4;
+    container.style.fontSize = `${currentFontSize}rem`;
+    // 반복적으로 줄이면서 height를 체크
+    while (container.scrollHeight > container.offsetHeight && currentFontSize > 0.3) {
+      currentFontSize -= 0.05;
+      container.style.fontSize = `${currentFontSize}rem`;
+    }
+    setFontSize(currentFontSize);
+  }, [quoteData.quote]);
+
+  useEffect(() => {
+    if (!authorTextRef.current) return;
+    const container = authorTextRef.current;
+    let currentFontSize = 1.1;
+    container.style.fontSize = `${currentFontSize}rem`;
+    while (container.scrollHeight > container.offsetHeight && currentFontSize > 0.3) {
+      currentFontSize -= 0.05;
+      container.style.fontSize = `${currentFontSize}rem`;
+    }
+    setAuthorFontSize(currentFontSize);
+  }, [quoteData.author]);
 
   const handleHome = () => {
     navigate("/");
@@ -375,7 +418,7 @@ const QuoteResult: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <Layout currentPage="quote-result">
       <QuoteResultContainer>
         <BlurredBackground />
         <Card>
@@ -390,8 +433,8 @@ const QuoteResult: React.FC = () => {
            {/* 명언 그리드 + 명언 + 작가 */}
           <QuoteGridWrapper>
             <QuoteGridImg src={quoteGrid} alt="quote grid" />
-            <QuoteText>{quoteData.quote}</QuoteText>
-            <AuthorText>{quoteData.author}</AuthorText>
+            <QuoteText ref={quoteTextRef} style={{ fontSize: `${fontSize}rem` }}>{quoteData.quote}</QuoteText>
+            <AuthorText ref={authorTextRef} style={{ fontSize: `${authorFontSize}rem` }}>{quoteData.author}</AuthorText>
           </QuoteGridWrapper>
 
           {/* 키워드 */}
