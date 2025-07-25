@@ -135,6 +135,7 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
             onSend={handleSendMessage}
             disabled={chatState.isLoading}
             placeholder="당신의 사연을 입력해주세요."
+            autoFocus
           />
         )}
 

@@ -41,6 +41,7 @@ const TextArea = styled.textarea`
   color: ${theme.colors.text.primary};
   resize: none;
   line-height: 1.5;
+  text-decoration: none;
 
   &::placeholder {
     color: ${theme.colors.text.secondary};
@@ -98,12 +99,14 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  autoFocus?: boolean;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
   onSend,
   disabled = false,
   placeholder = "당신의 사연을 입력해주세요.",
+  autoFocus = false,
 }) => {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -156,6 +159,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
+          autoFocus={autoFocus}
         />
 
         <SendButton
