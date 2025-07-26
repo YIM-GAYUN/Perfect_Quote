@@ -149,11 +149,12 @@ def chatbot(state: ChatbotState) -> ChatbotState:
 
 def save_history(state: ChatbotState) -> ChatbotState:
     chat_history = state["chat_history"]
+
     chat_history.add_messages([
         HumanMessage(content=state["user_message"]),
         AIMessage(content=state["chatbot_message"])
     ])
-
+    
     return {
         **state,
         "chat_history": chat_history 
@@ -171,8 +172,13 @@ def _build_analysis_chain():
 def analyze_chat_history(state: ChatbotState) -> ChatbotState:
     chat_history = state["chat_history"]
 
-    # 대화 턴 수가 TURN_THRESHOLD 이상이면 분석을 한다.
-    if len(chat_history.messages) < TURN_THRESHOLD:
+    # 사용자가 종료 명령어를 입력했는지 확인
+    user_input = state.get("user_message", "").strip().lower()
+    quit_commands = ['quit', 'exit', '종료']
+    is_quit_command = any(cmd in user_input for cmd in quit_commands)
+    
+    # 대화 턴 수가 TURN_THRESHOLD 이상이거나 종료 명령어가 입력된 경우에만 분석을 진행
+    if len(chat_history.messages) < TURN_THRESHOLD and not is_quit_command:
         raise ValueError(f"Chat history must be at least {TURN_THRESHOLD} messages")
     
     # 분석 체인을 생성하고 실행한다.
@@ -360,6 +366,13 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
 
 # === 분기 엣지 정의 ===
 def should_analyze_chat_history(state: ChatbotState) -> str:
+    # 사용자가 종료 명령어를 입력한 경우 체크
+    user_input = state.get("user_message", "").strip().lower()
+    quit_commands = ['quit', 'exit', '종료']
+    
+    if any(cmd in user_input for cmd in quit_commands):
+        return f"messages >= {TURN_THRESHOLD}"
+    
     if len(state["chat_history"].messages) >= TURN_THRESHOLD:
         return f"messages >= {TURN_THRESHOLD}"
     else:
