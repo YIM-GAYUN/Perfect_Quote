@@ -35,15 +35,34 @@ except ImportError as e:
 import pandas as pd
 import numpy as np
 
-# 임베딩 시스템 상태 추적
+# .env 파일 로드
+load_dotenv()
+
+# === 상수 정의 ===
+TURN_THRESHOLD = 20
 EMBEDDING_AVAILABLE = False
 EMBEDDING_LOADING = False
-
-# 대화 턴 수 임계값
-TURN_THRESHOLD = 20
-
-# 강제로 임베딩 시스템 활성화
 EMBEDDING_LIBS_AVAILABLE = True
+
+# === 기본 명언 데이터 ===
+FALLBACK_QUOTES = {
+    'general': [
+        {"quote": "인생은 우리가 만들어가는 것이다. 어제보다 나은 오늘을 만들자.", "author": "랄프 왈도 에머슨", "category": "성장", "similarity": 0.88},
+        {"quote": "변화를 두려워하지 마라. 성장의 시작이다.", "author": "보 베넷", "category": "성장", "similarity": 0.85},
+        {"quote": "지혜는 경험에서 나오고, 경험은 도전에서 나온다.", "author": "오스카 와일드", "category": "지혜", "similarity": 0.82}
+    ],
+    'success': [
+        {"quote": "성공은 준비와 기회가 만나는 지점에서 일어난다.", "author": "바비 언저", "category": "성공", "similarity": 0.92},
+        {"quote": "실패는 성공의 어머니다. 포기하지 말고 계속 도전하라.", "author": "토마스 에디슨", "category": "성공", "similarity": 0.89},
+        {"quote": "꿈을 향해 나아가라. 목표가 있으면 길이 보인다.", "author": "랄프 왈도 에머슨", "category": "목표", "similarity": 0.87}
+    ],
+    'hope': [
+        {"quote": "어둠 속에서도 한 줄기 빛은 찾을 수 있다.", "author": "마틴 루터 킹", "category": "희망", "similarity": 0.90},
+        {"quote": "모든 어려움은 지나간다. 시간이 최고의 치료제다.", "author": "괴테", "category": "치유", "similarity": 0.87},
+        {"quote": "고통은 피할 수 없지만, 고통에 대한 고뇌는 선택사항이다.", "author": "하버 딜런", "category": "극복", "similarity": 0.84}
+    ]
+}
+
 print("🔧 임베딩 시스템 강제 활성화")
 
 try:
@@ -53,9 +72,6 @@ try:
 except ImportError as e:
     print(f"⚠️ 임베딩 라이브러리 로드 실패: {e}")
     print("🔄 런타임에 다시 시도할 예정")
-
-# .env 파일 로드
-load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -86,6 +102,144 @@ class ChatbotState(TypedDict):
     current_quote_index: Annotated[int, "Current quote index being presented"]
     quote_selection_complete: Annotated[bool, "Whether quote selection is complete"]
 
+# === 유틸리티 클래스 ===
+class LLMChainBuilder:
+    """LLM 체인 생성을 위한 통합 클래스"""
+    
+    @staticmethod
+    def _init_llm():
+        return ChatUpstage(
+            model="solar-pro",
+            temperature=0.7,
+            max_tokens=300,
+        )
+    
+    @classmethod
+    def build_chat_chain(cls):
+        """일반 채팅용 체인"""
+        llm = cls._init_llm()
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", SYSTEM_PROMPT),
+            ("user", "{user_input}")
+        ])
+        return prompt | llm
+    
+    @classmethod
+    def build_analysis_chain(cls):
+        """대화 분석용 체인"""
+        llm = cls._init_llm()
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", ANALYSIS_PROMPT),
+            ("user", "다음 대화 히스토리를 분석하라. \\n\\n{chat_history}")
+        ])
+        return prompt | llm
+    
+    @classmethod
+    def build_advice_chain(cls):
+        """조언 및 키워드 생성용 체인"""
+        llm = cls._init_llm()
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", ANALYSIS_PROMPT + "\n\n분석 결과를 바탕으로 다음 두 가지를 제공해줘요.:\n1. 사용자에게 적절한 조언을 해줘요. 사용자에게는 '당신, 그대'라는 2인칭 표현을 사용해요. (최대 세 문장, 문학적이고 감성적인 어투를 사용하여 친절하게 제공해줘요.)\n2. 대화 내용의 키워드 (최대 5개, 쉼표로 구분)\n\n형식:\n조언: [조언 내용]\n키워드: [키워드1, 키워드2, 키워드3]"),
+            ("user", "{chat_history}")
+        ])
+        return prompt | llm
+
+class QuoteManager:
+    """명언 관련 기능을 담당하는 클래스"""
+    
+    @staticmethod
+    def select_fallback_quotes(analysis_text: str) -> List[Dict]:
+        """분석 내용에 따라 적절한 fallback 명언 선택"""
+        analysis_lower = analysis_text.lower()
+        
+        if any(word in analysis_lower for word in ['성공', '도전', '목표', '노력']):
+            return FALLBACK_QUOTES['success']
+        elif any(word in analysis_lower for word in ['힘들', '어려움', '슬픔', '우울']):
+            return FALLBACK_QUOTES['hope']
+        else:
+            return FALLBACK_QUOTES['general']
+    
+    @staticmethod
+    def search_quotes(chat_analysis: str) -> List[Dict]:
+        """명언 검색 (벡터 검색 또는 fallback)"""
+        fallback_quotes = QuoteManager.select_fallback_quotes(chat_analysis)
+        
+        try:
+            if QUOTE_RETRIEVER_AVAILABLE:
+                import warnings
+                import sys
+                from io import StringIO
+                
+                # 모든 출력과 경고 억제
+                old_stdout = sys.stdout
+                old_stderr = sys.stderr
+                
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        sys.stdout = StringIO()
+                        sys.stderr = StringIO()
+                        
+                        quotes = find_similar_quote_cosine_silent(chat_analysis, top_k=3)
+                        
+                finally:
+                    # 출력 복원
+                    sys.stdout = old_stdout
+                    sys.stderr = old_stderr
+                
+                # 검색 결과 검증
+                if quotes and len(quotes) > 0 and all('quote' in q and 'author' in q for q in quotes):
+                    print(f"✅ 명언 검색 성공: {len(quotes)}개 후보")
+                    return quotes
+                else:
+                    print("⚠️ 명언 검색 결과가 올바르지 않아 기본 명언을 사용합니다.")
+                    return fallback_quotes
+            else:
+                print("⚠️ quote_retriever 사용 불가 - 기본 명언 사용")
+                return fallback_quotes
+
+        except Exception as e:
+            print(f"⚠️ 명언 검색 중 오류 발생: {e}")
+            print("기본 명언을 사용합니다.")
+            return fallback_quotes
+    
+    @staticmethod
+    def format_quote_message(quote_data: Dict, current_index: int) -> str:
+        """명언 제시 메시지 포맷팅"""
+        quote_text = quote_data["quote"]
+        author_text = quote_data["author"]
+        similarity = quote_data.get("similarity", 0)
+        
+        return f"다음 명언은 어떠신가요?\n\n💬 \"{quote_text}\"\n✍️ 저자: {author_text}\n📊 유사도: {similarity:.3f}\n\n이 명언을 선택하시겠습니까? (예/아니오)"
+
+class ConversationHelper:
+    """대화 관련 유틸리티 함수들"""
+    
+    @staticmethod
+    def is_quit_command(user_input: str) -> bool:
+        """종료 명령어 확인"""
+        quit_commands = ['quit', 'exit', '종료']
+        return any(cmd in user_input.strip().lower() for cmd in quit_commands)
+    
+    @staticmethod
+    def parse_advice_response(response_text: str) -> tuple[str, List[str]]:
+        """조언 응답 파싱"""
+        advice = "대화를 통해 행복을 찾아가시길 바랍니다."
+        keywords = ["대화", "행복", "고민"]
+        
+        try:
+            lines = response_text.split('\n')
+            for line in lines:
+                if line.startswith('조언:'):
+                    advice = line.replace('조언:', '').strip()
+                elif line.startswith('키워드:'):
+                    keywords_text = line.replace('키워드:', '').strip()
+                    keywords = [k.strip() for k in keywords_text.split(',')]
+        except Exception:
+            pass  # 기본값 사용
+        
+        return advice, keywords
+
 # === LangGraph 노드 함수들 ===
 def validate_user_input(state: ChatbotState) -> ChatbotState:
     user_input = state["user_message"]
@@ -105,22 +259,6 @@ def validate_user_input(state: ChatbotState) -> ChatbotState:
         "status": "validated"
     }
 
-def _init_llm():
-    return ChatUpstage(
-        model="solar-pro",
-        temperature=0.7,
-        max_tokens=300,
-    )
-
-def _build_chain():
-    llm = _init_llm()
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", SYSTEM_PROMPT),
-        ("user", "{user_input}")
-    ])
-    chain = prompt | llm  
-    return chain
-
 def chatbot(state: ChatbotState) -> ChatbotState:
     # Initialize chat history if empty
     chat_history = state["chat_history"]
@@ -135,7 +273,7 @@ def chatbot(state: ChatbotState) -> ChatbotState:
             for msg in chat_history.messages[-6:]  # 최근 6개 메시지만 사용
         ])
         
-    chain = _build_chain()
+    chain = LLMChainBuilder.build_chat_chain()
     response = chain.invoke({
         "user_input": f"{formatted_history}\n\nUser: {state['user_message']}" if formatted_history else state["user_message"]
     })
@@ -160,29 +298,19 @@ def save_history(state: ChatbotState) -> ChatbotState:
         "chat_history": chat_history 
     }
 
-def _build_analysis_chain():
-    llm = _init_llm()
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", ANALYSIS_PROMPT),
-        ("user", "다음 대화 히스토리를 분석하라. \\n\\n{chat_history}")
-    ])
-    chain = prompt | llm
-    return chain
-
 def analyze_chat_history(state: ChatbotState) -> ChatbotState:
     chat_history = state["chat_history"]
 
     # 사용자가 종료 명령어를 입력했는지 확인
     user_input = state.get("user_message", "").strip().lower()
-    quit_commands = ['quit', 'exit', '종료']
-    is_quit_command = any(cmd in user_input for cmd in quit_commands)
+    is_quit_command = ConversationHelper.is_quit_command(user_input)
     
     # 대화 턴 수가 TURN_THRESHOLD 이상이거나 종료 명령어가 입력된 경우에만 분석을 진행
     if len(chat_history.messages) < TURN_THRESHOLD and not is_quit_command:
         raise ValueError(f"Chat history must be at least {TURN_THRESHOLD} messages")
     
     # 분석 체인을 생성하고 실행한다.
-    analysis_chain = _build_analysis_chain()
+    analysis_chain = LLMChainBuilder.build_analysis_chain()
     analysis_response = analysis_chain.invoke({
         "chat_history": str(chat_history)
     })
@@ -192,113 +320,24 @@ def analyze_chat_history(state: ChatbotState) -> ChatbotState:
         "chat_analysis": str(chat_analysis)
     }
 
-def _build_advice_and_keywords_chain():
-    llm = _init_llm()
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", ANALYSIS_PROMPT + "\n\n분석 결과를 바탕으로 다음 두 가지를 제공해줘요.:\n1. 사용자에게 적절한 조언을 해줘요. 사용자에게는 '당신, 그대'라는 2인칭 표현을 사용해요. (최대 세 문장, 문학적이고 감성적인 어투를 사용하여 친절하게 제공해줘요.)\n2. 대화 내용의 키워드 (최대 5개, 쉼표로 구분)\n\n형식:\n조언: [조언 내용]\n키워드: [키워드1, 키워드2, 키워드3]"),
-        ("user", "{chat_history}")
-    ])
-    chain = prompt | llm
-    return chain
-
 def generate_advice(state: ChatbotState) -> ChatbotState:
     """대화 분석을 바탕으로 사용자에 적합한 조언을 생성한다."""
-    llm = _build_advice_and_keywords_chain()
+    chain = LLMChainBuilder.build_advice_chain()
 
     chat_analysis = state["chat_analysis"]
-    result = llm.invoke({"chat_history": chat_analysis})
+    result = chain.invoke({"chat_history": chat_analysis})
     
     # 응답 텍스트 파싱
-    response_text = str(result.content)
-    advice = "대화를 통해 행복을 찾아가시길 바랍니다."
-    keywords = ["대화", "행복", "고민"]
+    advice, keywords = ConversationHelper.parse_advice_response(str(result.content))
     
-    # 기본 명언 데이터 (명언 검색 실패 시 사용) - 대화 분석 기반 동적 선택
-    import random
-    
-    quote_pools = {
-        'general': [
-            {"quote": "인생은 우리가 만들어가는 것이다. 어제보다 나은 오늘을 만들자.", "author": "랄프 왈도 에머슨", "category": "성장", "similarity": 0.88},
-            {"quote": "변화를 두려워하지 마라. 성장의 시작이다.", "author": "보 베넷", "category": "성장", "similarity": 0.85},
-            {"quote": "지혜는 경험에서 나오고, 경험은 도전에서 나온다.", "author": "오스카 와일드", "category": "지혜", "similarity": 0.82}
-        ],
-        'success': [
-            {"quote": "성공은 준비와 기회가 만나는 지점에서 일어난다.", "author": "바비 언저", "category": "성공", "similarity": 0.92},
-            {"quote": "실패는 성공의 어머니다. 포기하지 말고 계속 도전하라.", "author": "토마스 에디슨", "category": "성공", "similarity": 0.89},
-            {"quote": "꿈을 향해 나아가라. 목표가 있으면 길이 보인다.", "author": "랄프 왈도 에머슨", "category": "목표", "similarity": 0.87}
-        ],
-        'hope': [
-            {"quote": "어둠 속에서도 한 줄기 빛은 찾을 수 있다.", "author": "마틴 루터 킹", "category": "희망", "similarity": 0.90},
-            {"quote": "모든 어려움은 지나간다. 시간이 최고의 치료제다.", "author": "괴테", "category": "치유", "similarity": 0.87},
-            {"quote": "고통은 피할 수 없지만, 고통에 대한 고뇌는 선택사항이다.", "author": "하버 딜런", "category": "극복", "similarity": 0.84}
-        ]
-    }
-    
-    # 대화 분석 내용에 따라 적절한 명언 풀 선택
-    analysis_text = chat_analysis.lower()
-    if any(word in analysis_text for word in ['성공', '도전', '목표', '노력']):
-        default_quotes = quote_pools['success']
-    elif any(word in analysis_text for word in ['힘들', '어려움', '슬픔', '우울']):
-        default_quotes = quote_pools['hope']
-    else:
-        default_quotes = quote_pools['general']
-    
-    try:
-        # 명언 검색 (노트북 방식 사용)
-        if QUOTE_RETRIEVER_AVAILABLE:
-            import warnings
-            import sys
-            from io import StringIO
-            
-            # 모든 출력과 경고 억제
-            old_stdout = sys.stdout
-            old_stderr = sys.stderr
-            
-            try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    sys.stdout = StringIO()
-                    sys.stderr = StringIO()
-                    
-                    quotes = find_similar_quote_cosine_silent(chat_analysis, top_k=3)
-                    
-            finally:
-                # 출력 복원
-                sys.stdout = old_stdout
-                sys.stderr = old_stderr
-            
-            # 검색 결과 검증
-            if quotes and len(quotes) > 0 and all('quote' in q and 'author' in q for q in quotes):
-                retrieved_quotes_and_authors = quotes
-                print(f"✅ 명언 검색 성공: {len(quotes)}개 후보")
-            else:
-                print("⚠️ 명언 검색 결과가 올바르지 않아 기본 명언을 사용합니다.")
-                retrieved_quotes_and_authors = default_quotes
-        else:
-            print("⚠️ quote_retriever 사용 불가 - 기본 명언 사용")
-            retrieved_quotes_and_authors = default_quotes
+    # 명언 검색
+    retrieved_quotes = QuoteManager.search_quotes(chat_analysis)
 
-    except Exception as e:
-        print(f"⚠️ 명언 검색 중 오류 발생: {e}")
-        print("기본 명언을 사용합니다.")
-        retrieved_quotes_and_authors = default_quotes
-
-    try:
-        lines = response_text.split('\n')
-        for line in lines:
-            if line.startswith('조언:'):
-                advice = line.replace('조언:', '').strip()
-            elif line.startswith('키워드:'):
-                keywords_text = line.replace('키워드:', '').strip()
-                keywords = [k.strip() for k in keywords_text.split(',')]
-    except Exception:
-        pass  # 기본값 사용
-    
     return {**state,
-        "retrieved_quotes_and_authors": retrieved_quotes_and_authors,
+        "retrieved_quotes_and_authors": retrieved_quotes,
         "advice": advice,
         "keywords": keywords,
-        "candidate_quotes": retrieved_quotes_and_authors,
+        "candidate_quotes": retrieved_quotes,
         "current_quote_index": 0,
         "quote_selection_complete": False,
         "quote": "",
@@ -319,12 +358,7 @@ def present_quote(state: ChatbotState) -> ChatbotState:
     
     # 현재 명언 가져오기
     current_quote = candidate_quotes[current_index]
-    quote_text = current_quote["quote"]
-    author_text = current_quote["author"]
-    similarity = current_quote.get("similarity", 0)
-    
-    # 사용자에게 명언 제시
-    message = f"다음 명언은 어떠신가요?\n\n💬 \"{quote_text}\"\n✍️ 저자: {author_text}\n📊 유사도: {similarity:.3f}\n\n이 명언을 선택하시겠습니까? (예/아니오)"
+    message = QuoteManager.format_quote_message(current_quote, current_index)
     
     return {
         **state,
@@ -368,9 +402,8 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
 def should_analyze_chat_history(state: ChatbotState) -> str:
     # 사용자가 종료 명령어를 입력한 경우 체크
     user_input = state.get("user_message", "").strip().lower()
-    quit_commands = ['quit', 'exit', '종료']
     
-    if any(cmd in user_input for cmd in quit_commands):
+    if ConversationHelper.is_quit_command(user_input):
         return f"messages >= {TURN_THRESHOLD}"
     
     if len(state["chat_history"].messages) >= TURN_THRESHOLD:
@@ -387,6 +420,8 @@ workflow.add_node("chatbot", chatbot)
 workflow.add_node("save_history", save_history)
 workflow.add_node("analyze_chat_history", analyze_chat_history)
 workflow.add_node("generate_advice", generate_advice)
+workflow.add_node("present_quote", present_quote)
+workflow.add_node("process_quote_selection", process_quote_selection)
 
 # 엣지 연결
 workflow.add_edge(START, "validate_user_input")
@@ -405,14 +440,22 @@ workflow.add_conditional_edges(
 
 # analyze_chat_history에서 generate_advice로
 workflow.add_edge("analyze_chat_history", "generate_advice")
-workflow.add_edge("generate_advice", END)
+workflow.add_edge("generate_advice", "present_quote")
+workflow.add_edge("present_quote", END)
+workflow.add_edge("process_quote_selection", END)
 
 # 그래프 컴파일
 graph = workflow.compile()
 
-# === 향상된 Solar 챗봇 클래스 ===
+# === 통합된 챗봇 클래스 ===
 class EnhancedSolarChatbot:
     def __init__(self):
+        self._init_state()
+        self.quote_selection_mode = False
+        print("🚀 Enhanced Solar Chatbot with LangGraph 초기화 완료")
+    
+    def _init_state(self):
+        """상태 초기화"""
         self.state = {
             "user_id": "",
             "thread_num": "",
@@ -431,11 +474,6 @@ class EnhancedSolarChatbot:
             "keywords": [],
             "advice": ""
         }
-        
-        # 명언 선택 모드 추적
-        self.quote_selection_mode = False
-        
-        print("🚀 Enhanced Solar Chatbot with LangGraph 초기화 완료")
     
     def run_chatbot_once(self, user_input, user_id, thread_num):
         """단일 턴 대화 실행"""
@@ -468,15 +506,16 @@ class EnhancedSolarChatbot:
                 result = graph.invoke(self.state)
                 self.state.update(result)
                 
-                # TURN_THRESHOLD턴 후 분석이 완료되었는지 확인
-                if len(self.state["chat_history"].messages) >= TURN_THRESHOLD:
+                # exit 명령어나 TURN_THRESHOLD턴 후 분석이 완료되었는지 확인
+                if (len(self.state["chat_history"].messages) >= TURN_THRESHOLD or 
+                    ConversationHelper.is_quit_command(user_input)):
+                    
                     if self.state.get('advice') and self.state.get('keywords'):
-                        print(f"🎉 {TURN_THRESHOLD}턴 대화 완료 - 분석 결과 준비됨")
+                        print(f"🎉 대화 완료 - 분석 결과 준비됨")
                         
                         # 명언 선택 모드 시작
                         if self.state.get('candidate_quotes'):
                             print("🔄 명언 선택 모드 시작")
-                            self.state = present_quote(self.state)
                             self.quote_selection_mode = True
                 
                 return self.state
@@ -500,7 +539,7 @@ class EnhancedSolarChatbot:
             "keywords": self.state.get("keywords", [])
         }
 
-# 챗봇 인스턴스들을 저장할 딕셔너리
+# === 세션 관리 ===
 chatbot_sessions = {}
 session_lock = threading.Lock()
 
@@ -521,6 +560,7 @@ def get_chatbot_instance(user_id, thread_num):
     
     return chatbot_sessions[session_key]['chatbot']
 
+# === API 엔드포인트들 ===
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """서버 상태 확인"""
