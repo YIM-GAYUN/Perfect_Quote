@@ -455,7 +455,7 @@ class EnhancedSolarChatbot:
                 result = graph.invoke(self.state)
                 self.state.update(result)
                 
-                # 10턴 후 분석이 완료되었는지 확인
+                # TURN_THRESHOLD턴 후 분석이 완료되었는지 확인
                 if len(self.state["chat_history"].messages) >= TURN_THRESHOLD:
                     if self.state.get('advice') and self.state.get('keywords'):
                         print(f"🎉 {TURN_THRESHOLD}턴 대화 완료 - 분석 결과 준비됨")
@@ -590,7 +590,7 @@ def send_message():
             print(f"🎯 조언: {result_state.get('advice', '')}")
             print(f"🔑 키워드: {result_state.get('keywords', [])}")
         
-        # 10턴 분석 완료 시 추가 정보
+        # TURN_THRESHOLD 턴 분석 완료 시 추가 정보
         if len(result_state.get('chat_history', ChatMessageHistory()).messages) >= TURN_THRESHOLD:
             if result_state.get('advice'):
                 response_data['analysis_complete'] = True
