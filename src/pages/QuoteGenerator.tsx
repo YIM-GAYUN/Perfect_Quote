@@ -44,6 +44,17 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  // 디버깅을 위한 상태 로그
+  useEffect(() => {
+    console.log("🔄 QuoteGenerator 상태 업데이트:", {
+      currentStep: chatState.currentStep,
+      isLoading: chatState.isLoading,
+      selectedQuote: !!chatState.selectedQuote,
+      messageCount: chatState.messages.length,
+      userMessageCount: chatState.messages.filter(msg => !msg.isBot).length
+    });
+  }, [chatState.currentStep, chatState.isLoading, chatState.selectedQuote, chatState.messages.length]);
+
   // 새 메시지가 추가될 때마다 스크롤을 아래로
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,11 +75,11 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
   };
 
   const shouldShowConfirmButtons = () => {
-    // 명언 선택 모드에서만 버튼 표시 (isLoading 조건 임시 제거)
+    // 명언 선택 모드에서만 버튼 표시
     const shouldShow = (
       chatState.selectedQuote &&
-      chatState.currentStep === 2 // 명언 선택 단계
-      // !chatState.isLoading // 임시로 제거
+      chatState.currentStep === 2 && // 명언 선택 단계
+      !chatState.isLoading // 로딩 중이 아닐 때
     );
     
     console.log("🔍 ConfirmButtons 조건 확인:", {
@@ -82,7 +93,21 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
   };
 
   const shouldShowInput = () => {
-    return !chatState.isLoading && chatState.currentStep < 3; // 완료 단계 전까지
+    // 명언 선택이 완료되지 않았고, 로딩 중이 아니면 입력창 표시
+    const shouldShow = (
+      !chatState.isLoading && 
+      !chatState.selectedQuote?.id && // 명언이 확정되지 않았을 때
+      chatState.currentStep < 20 // 20턴까지는 입력 가능
+    );
+    
+    console.log("🔍 Input 조건 확인:", {
+      isLoading: chatState.isLoading,
+      selectedQuote: !!chatState.selectedQuote,
+      currentStep: chatState.currentStep,
+      shouldShow
+    });
+    
+    return shouldShow;
   };
 
   return (

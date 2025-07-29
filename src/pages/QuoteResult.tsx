@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import Layout from "../components/Layout/Layout";
 
@@ -610,15 +610,24 @@ const DownloadIcon = () => (
 
 const QuoteResult: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // URL 파라미터에서 데이터 가져오기
+  const date = searchParams.get("date");
+  const dayOfWeek = searchParams.get("dayOfWeek");
+  const quote = searchParams.get("quote");
+  const author = searchParams.get("author");
+  const keywords = searchParams.get("keywords")?.split(",");
+  const context = searchParams.get("context");
 
   // 더미 데이터 (실제로는 props나 state에서 가져올 것)
   const quoteData: QuoteResult = {
-    date: "20250505",
-    dayOfWeek: "MONDAY",
-    quote: '"가장 어두운 밤도 결국은 끝나고,\n해는 떠오른다."',
-    author: "-빅터 위고",
-    keywords: ["지침", "고난", "아픔", "위로"],
-    context:
+    date: date || "20250505",
+    dayOfWeek: dayOfWeek || "MONDAY",
+    quote: quote || '"가장 어두운 밤도 결국은 끝나고,\n해는 떠오른다."',
+    author: author || "-빅터 위고",
+    keywords: keywords || ["지침", "고난", "아픔", "위로"],
+    context: context ||
       "몸이 다친 것도 힘든데,\n마음까지 지쳐 있는 상태라면 작은 일도\n더 크게 느껴질 수 있거든요.\n넘어졌다는 사실보다,\n요즘 여러 가지로 마음이 무겁고 버티는 게\n벅찼던 거 아닐까요?\n\n당신에게 따뜻한 위로가\n될 수 있는 말을 전할게요.",
   };
 

@@ -211,7 +211,7 @@ class QuoteManager:
         author_text = quote_data["author"]
         similarity = quote_data.get("similarity", 0)
         
-        return f"다음 명언은 어떠신가요?\n\n💬 \"{quote_text}\"\n✍️ 저자: {author_text}\n📊 유사도: {similarity:.3f}\n\n이 명언을 선택하시겠습니까? (예/아니오)"
+        return f"이 명언으로 결정할까요?\n\n💬 \"{quote_text}\"\n✍️ 저자: {author_text}\n📊 유사도: {similarity:.3f}\n\n(예/아니오)"
 
 class ConversationHelper:
     """대화 관련 유틸리티 함수들"""
@@ -376,10 +376,14 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
     candidate_quotes = state["candidate_quotes"]
     current_index = state["current_quote_index"]
     
+    print(f"🔄 process_quote_selection 실행 - 사용자 입력: '{user_input}', 현재 인덱스: {current_index}")
+    
     if user_input in ['예', 'yes', 'y', '네', '선택']:
         # 현재 명언 선택 확정
         selected_quote = candidate_quotes[current_index]
         final_message = f"✨ 명언 선택이 완료되었습니다! ✨\n\n💬 \"{selected_quote['quote']}\"\n✍️ {selected_quote['author']}\n\n🎯 맞춤 조언: {state.get('advice', '')}\n\n이 명언이 당신의 마음에 위로가 되기를 바랍니다. 💝"
+        
+        print(f"✅ 명언 선택 완료: {selected_quote['quote'][:50]}...")
         
         return {
             **state,
@@ -398,12 +402,14 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
         next_quote = candidate_quotes[next_index]
         message = QuoteManager.format_quote_message(next_quote, next_index)
         
+        print(f"🔄 다음 명언으로 이동: 인덱스 {current_index} → {next_index}")
+        
         return {
             **state,
             "current_quote_index": next_index,
             "chatbot_message": message,
             "quote_selection_mode": True,
-            "quote_selection_complete": False,  # 명시적으로 False 설정
+            "quote_selection_complete": False,
             "timestamp": datetime.now().isoformat()
         }
     
@@ -412,11 +418,13 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
         current_quote = candidate_quotes[current_index]
         message = f"죄송해요, '예' 또는 '아니오'로 답해주세요.\n\n{QuoteManager.format_quote_message(current_quote, current_index)}"
         
+        print(f"⚠️ 잘못된 입력: '{user_input}' - 현재 명언 다시 제시")
+        
         return {
             **state,
             "chatbot_message": message,
             "quote_selection_mode": True,
-            "quote_selection_complete": False,  # 명시적으로 False 설정
+            "quote_selection_complete": False,
             "timestamp": datetime.now().isoformat()
         }
 
@@ -439,12 +447,19 @@ def should_continue_quote_selection(state: ChatbotState) -> str:
     if state.get("quote_selection_complete", False):
         return "quote_selection_complete"
     
-    # 명언 선택 모드인지 확인 
-    if state.get("quote_selection_mode", False):
+    # candidate_quotes가 있고 quote_selection_mode가 True인 경우
+    candidate_quotes = state.get("candidate_quotes", [])
+    quote_selection_mode = state.get("quote_selection_mode", False)
+    
+    if candidate_quotes and quote_selection_mode:
+        # 현재 명언 인덱스 확인
+        current_index = state.get("current_quote_index", 0)
+        
+        # 명언 선택 모드가 활성화되어 있으면 계속 진행
         return "continue_quote_selection"
     
-    # 첫 번째 명언 제시
-    return "start_quote_selection"
+    # 명언 선택 모드가 아니면 완료 처리
+    return "quote_selection_complete"
 
 def is_quote_selection_input(state: ChatbotState) -> str:
     """사용자 입력이 명언 선택 관련인지 확인"""
@@ -494,24 +509,25 @@ workflow.add_conditional_edges(
 
 # 분석 → 조언 생성 → 명언 제시
 workflow.add_edge("analyze_chat_history", "generate_advice")
-workflow.add_edge("generate_advice", "present_quote")
 
-# 명언 선택 순환 구조
+# generate_advice 이후 명언 선택 모드 진입
 workflow.add_conditional_edges(
-    "present_quote",
+    "generate_advice",
     should_continue_quote_selection,
     path_map={
-        "start_quote_selection": END,  # 첫 번째 명언 제시 후 사용자 입력 대기
-        "continue_quote_selection": END,  # 다음 명언 제시 후 사용자 입력 대기
+        "continue_quote_selection": "present_quote",  # 명언 제시
         "quote_selection_complete": END  # 선택 완료
     }
 )
 
+workflow.add_edge("present_quote", END)  # 명언 제시 후 사용자 입력 대기
+
+# process_quote_selection에서 다음 명언으로 이동하는 경우 처리
 workflow.add_conditional_edges(
     "process_quote_selection",
     should_continue_quote_selection,
     path_map={
-        "continue_quote_selection": "present_quote",  # 다음 명언 제시로 순환
+        "continue_quote_selection": "present_quote",  # 다음 명언 제시로 이동
         "quote_selection_complete": END  # 선택 완료 - 워크플로우 종료
     }
 )
@@ -555,9 +571,16 @@ class EnhancedSolarChatbot:
         self.state["thread_num"] = thread_num
 
         try:
+            print(f"🔄 LangGraph 실행 시작 - User: {user_input[:30]}...")
+            print(f"📊 현재 상태: quote_selection_mode={self.state.get('quote_selection_mode')}, candidate_quotes={len(self.state.get('candidate_quotes', []))}")
+            
             # LangGraph로 모든 로직 처리
             result = graph.invoke(self.state)
             self.state.update(result)
+            
+            print(f"✅ LangGraph 실행 완료")
+            print(f"📊 결과 상태: quote_selection_mode={self.state.get('quote_selection_mode')}, quote_selection_complete={self.state.get('quote_selection_complete')}")
+            print(f"💬 응답: {self.state.get('chatbot_message', '')[:100]}...")
             
             # 디버그 정보 출력
             if self.state.get('quote_selection_complete'):
@@ -709,7 +732,8 @@ def send_message():
                     'quote_id': str(uuid.uuid4()),
                     'changed': True
                 }
-                print(f"🔄 명언 선택 모드 활성 - 인덱스: {current_index}")
+                print(f"🔄 명언 선택 모드 활성 - 인덱스: {current_index}/{len(candidate_quotes)}")
+                print(f"📝 응답 내용: {result_state.get('chatbot_message', '')[:100]}...")
         
         # 명언 선택이 완료된 경우
         elif result_state.get('quote_selection_complete') and result_state.get('quote'):
@@ -721,9 +745,17 @@ def send_message():
                 'keywords': result_state.get('keywords', []),
                 'method': 'langgraph_enhanced_selection'
             }
+            response_data['quote_selection'] = {
+                'active': False,
+                'current_index': 0,
+                'total_count': 0,
+                'quote_id': str(uuid.uuid4()),
+                'changed': False
+            }
             print(f"📜 최종 명언 선택 완료: {result_state['quote'][:50]}... - {result_state['author']}")
             print(f"🎯 조언: {result_state.get('advice', '')}")
             print(f"🔑 키워드: {result_state.get('keywords', [])}")
+            print(f"📝 완료 응답 내용: {result_state.get('chatbot_message', '')[:100]}...")
         
         # TURN_THRESHOLD 턴 분석 완료 시 추가 정보
         if len(result_state.get('chat_history', ChatMessageHistory()).messages) >= TURN_THRESHOLD:

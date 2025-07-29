@@ -10,6 +10,9 @@ export interface Quote {
   text: string;
   author: string;
   category?: string;
+  advice?: string;
+  keywords?: string[];
+  method?: string;
 }
 
 export interface ChatState {
@@ -54,10 +57,13 @@ export interface ChatResponse {
   userId: string;
   threadNum: string;
   timestamp: string;
-  status: "pending" | "completed" | "error";
+  status: "pending" | "completed" | "error" | "quote_selected";
   content?: string;
   quote?: Quote;
   quote_selection?: QuoteSelection;
+  analysis_complete?: boolean;
+  advice?: string;
+  keywords?: string[];
   error?: string;
 }
 
