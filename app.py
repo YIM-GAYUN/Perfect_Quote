@@ -341,6 +341,7 @@ def generate_advice(state: ChatbotState) -> ChatbotState:
         "candidate_quotes": retrieved_quotes,
         "current_quote_index": 0,
         "quote_selection_complete": False,
+        "quote_selection_mode": True,  # 명언 선택 모드 활성화
         "quote": "",
         "author": ""
     }
@@ -402,6 +403,7 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
             "current_quote_index": next_index,
             "chatbot_message": message,
             "quote_selection_mode": True,
+            "quote_selection_complete": False,  # 명시적으로 False 설정
             "timestamp": datetime.now().isoformat()
         }
     
@@ -414,6 +416,7 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
             **state,
             "chatbot_message": message,
             "quote_selection_mode": True,
+            "quote_selection_complete": False,  # 명시적으로 False 설정
             "timestamp": datetime.now().isoformat()
         }
 
@@ -508,8 +511,8 @@ workflow.add_conditional_edges(
     "process_quote_selection",
     should_continue_quote_selection,
     path_map={
-        "continue_quote_selection": END,  # 다음 명언 제시 후 사용자 입력 대기
-        "quote_selection_complete": END  # 선택 완료
+        "continue_quote_selection": "present_quote",  # 다음 명언 제시로 순환
+        "quote_selection_complete": END  # 선택 완료 - 워크플로우 종료
     }
 )
 
@@ -671,13 +674,45 @@ def send_message():
             'status': result_state.get('status', 'completed'),
             'content': ai_response,
             'quote': None,
+            'quote_selection': {
+                'active': False,
+                'current_index': 0,
+                'total_count': 0,
+                'quote_id': None,
+                'changed': False
+            },
             'model': 'Solar Pro + LangGraph',
             'embedding_system': 'Enhanced FAISS',
             'conversation_summary': chatbot.get_conversation_summary()
         }
         
+        # 명언 선택 모드인 경우
+        if result_state.get('quote_selection_mode') and result_state.get('candidate_quotes'):
+            current_index = result_state.get('current_quote_index', 0)
+            candidate_quotes = result_state.get('candidate_quotes', [])
+            current_quote = candidate_quotes[current_index] if candidate_quotes else None
+            
+            if current_quote:
+                response_data['quote'] = {
+                    'id': str(uuid.uuid4()),
+                    'text': current_quote.get('quote', ''),
+                    'author': current_quote.get('author', ''),
+                    'advice': result_state.get('advice', ''),
+                    'keywords': result_state.get('keywords', []),
+                    'method': 'langgraph_enhanced_selection'
+                }
+                
+                response_data['quote_selection'] = {
+                    'active': True,
+                    'current_index': current_index,
+                    'total_count': len(candidate_quotes),
+                    'quote_id': str(uuid.uuid4()),
+                    'changed': True
+                }
+                print(f"🔄 명언 선택 모드 활성 - 인덱스: {current_index}")
+        
         # 명언 선택이 완료된 경우
-        if result_state.get('quote_selection_complete') and result_state.get('quote'):
+        elif result_state.get('quote_selection_complete') and result_state.get('quote'):
             response_data['quote'] = {
                 'id': str(uuid.uuid4()),
                 'text': result_state['quote'],

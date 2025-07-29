@@ -54,27 +54,35 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
   };
 
   const handleConfirm = () => {
-    confirmQuote();
-    // 로딩이 끝나면 결과 페이지로 이동
-    setTimeout(() => {
-      navigate("/result");
-    }, 3000);
+    // "예" 입력으로 명언 선택
+    sendMessage("예");
   };
 
   const handleReject = () => {
-    rejectQuote();
+    // "아니오" 입력으로 다음 명언 요청
+    sendMessage("아니오");
   };
 
   const shouldShowConfirmButtons = () => {
-    return (
+    // 명언 선택 모드에서만 버튼 표시 (isLoading 조건 임시 제거)
+    const shouldShow = (
       chatState.selectedQuote &&
-      chatState.currentStep >= 10 &&
-      !chatState.isLoading
+      chatState.currentStep === 2 // 명언 선택 단계
+      // !chatState.isLoading // 임시로 제거
     );
+    
+    console.log("🔍 ConfirmButtons 조건 확인:", {
+      selectedQuote: !!chatState.selectedQuote,
+      currentStep: chatState.currentStep,
+      isLoading: chatState.isLoading,
+      shouldShow
+    });
+    
+    return shouldShow;
   };
 
   const shouldShowInput = () => {
-    return !chatState.isLoading && chatState.currentStep < 10;
+    return !chatState.isLoading && chatState.currentStep < 3; // 완료 단계 전까지
   };
 
   return (

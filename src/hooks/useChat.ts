@@ -147,20 +147,64 @@ export const useChat = () => {
 
         const response = await apiSendMessage(request);
 
+        console.log("📡 API 응답 받음:", {
+          status: response.status,
+          hasQuote: !!response.quote,
+          hasQuoteSelection: !!response.quote_selection,
+          quoteSelectionActive: response.quote_selection?.active,
+          content: response.content?.substring(0, 50) + "..."
+        });
+
         if (response.status === "completed") {
           // 즉시 완료된 경우
           if (response.content) {
             addMessage(response.content, true);
           }
-          if (response.quote) {
+          
+          // 명언 선택 모드 처리
+          if (response.quote_selection?.active && response.quote) {
+            console.log("🔄 명언 선택 모드 활성화:", response.quote_selection);
+            console.log("📝 새로운 명언 내용:", response.content);
+            
+            // 새로운 명언을 인터페이스에 표시 (AI 응답으로)
+            if (response.content) {
+              console.log("✅ addMessage 호출:", response.content.substring(0, 50) + "...");
+              addMessage(response.content, false); // AI 응답으로 추가
+            } else {
+              console.log("❌ response.content가 없음");
+            }
+            
+            setChatState((prev) => ({
+              ...prev,
+              selectedQuote: response.quote,
+              currentStep: 2, // 명언 선택 단계
+              isLoading: false, // 로딩 상태 해제
+            }));
+          }
+          // 명언 선택 완료 처리
+          else if (response.quote && !response.quote_selection?.active) {
+            console.log("✅ 명언 선택 완료:", response.quote);
             const quoteMessage = `${response.quote.text} — ${response.quote.author}`;
             addMessage(quoteMessage, true);
             setChatState((prev) => ({
               ...prev,
               selectedQuote: response.quote,
+              currentStep: 3, // 완료 단계
+              isLoading: false, // 로딩 상태 해제
             }));
           }
-          setChatState((prev) => ({ ...prev, isLoading: false }));
+          // 일반 대화 처리
+          else {
+            // 일반 대화에서는 currentStep 증가
+            setChatState((prev) => ({
+              ...prev,
+              currentStep: prev.currentStep + 1,
+              isLoading: false, // 로딩 상태 해제
+            }));
+          }
+          
+          // isLoading은 각 조건에서 개별적으로 처리
+          // setChatState((prev) => ({ ...prev, isLoading: false }));
         } else if (response.status === "pending") {
           // pending 상태: 스트리밍 또는 폴링 시작
           if (API_CONFIG.enableStreaming) {
@@ -217,15 +261,51 @@ export const useChat = () => {
                   if (statusResponse.content) {
                     addMessage(statusResponse.content, true);
                   }
-                  if (statusResponse.quote) {
+                  
+                  // 명언 선택 모드 처리
+                  if (statusResponse.quote_selection?.active && statusResponse.quote) {
+                    console.log("🔄 명언 선택 모드 활성화 (폴링):", statusResponse.quote_selection);
+                    console.log("📝 새로운 명언 내용 (폴링):", statusResponse.content);
+                    
+                    // 새로운 명언을 인터페이스에 표시 (AI 응답으로)
+                    if (statusResponse.content) {
+                      console.log("✅ addMessage 호출 (폴링):", statusResponse.content.substring(0, 50) + "...");
+                      addMessage(statusResponse.content, false); // AI 응답으로 추가
+                    } else {
+                      console.log("❌ statusResponse.content가 없음");
+                    }
+                    
+                    setChatState((prev) => ({
+                      ...prev,
+                      selectedQuote: statusResponse.quote,
+                      currentStep: 2, // 명언 선택 단계
+                      isLoading: false, // 로딩 상태 해제
+                    }));
+                  }
+                  // 명언 선택 완료 처리
+                  else if (statusResponse.quote && !statusResponse.quote_selection?.active) {
+                    console.log("✅ 명언 선택 완료 (폴링):", statusResponse.quote);
                     const quoteMessage = `${statusResponse.quote.text} — ${statusResponse.quote.author}`;
                     addMessage(quoteMessage, true);
                     setChatState((prev) => ({
                       ...prev,
                       selectedQuote: statusResponse.quote,
+                      currentStep: 3, // 완료 단계
+                      isLoading: false, // 로딩 상태 해제
                     }));
                   }
-                  setChatState((prev) => ({ ...prev, isLoading: false }));
+                  // 일반 대화 처리
+                  else {
+                    // 일반 대화에서는 currentStep 증가
+                    setChatState((prev) => ({
+                      ...prev,
+                      currentStep: prev.currentStep + 1,
+                      isLoading: false, // 로딩 상태 해제
+                    }));
+                  }
+                  
+                  // isLoading은 각 조건에서 개별적으로 처리
+                  // setChatState((prev) => ({ ...prev, isLoading: false }));
                 }
               },
               (error) => {
@@ -343,11 +423,11 @@ export const useChat = () => {
         }
       }
 
-      // 단계 증가 (성공/실패 여부와 관계없이)
-      setChatState((prev) => ({
-        ...prev,
-        currentStep: prev.currentStep + 1,
-      }));
+      // 단계 증가는 명언 선택 모드에서 수동으로 관리됨
+      // setChatState((prev) => ({
+      //   ...prev,
+      //   currentStep: prev.currentStep + 1,
+      // }));
     },
     [
       chatState.currentStep,

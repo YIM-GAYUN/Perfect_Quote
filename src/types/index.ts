@@ -42,6 +42,14 @@ export interface ChatRequest {
   timestamp: string;
 }
 
+export interface QuoteSelection {
+  active: boolean;
+  current_index: number;
+  total_count: number;
+  quote_id: string | null;
+  changed: boolean;
+}
+
 export interface ChatResponse {
   userId: string;
   threadNum: string;
@@ -49,6 +57,7 @@ export interface ChatResponse {
   status: "pending" | "completed" | "error";
   content?: string;
   quote?: Quote;
+  quote_selection?: QuoteSelection;
   error?: string;
 }
 
