@@ -67,7 +67,7 @@ export interface ChatResponse {
   userId: string;
   threadNum: string;
   timestamp: string;
-  status: "pending" | "completed" | "error" | "quote_selected";
+  status: "pending" | "completed" | "error" | "quote_selected" | "validated";
   content?: string;
   quote?: Quote;
   quote_selection?: QuoteSelection;

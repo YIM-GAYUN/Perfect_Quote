@@ -171,7 +171,7 @@ export const useChat = () => {
           content: response.content?.substring(0, 50) + "..."
         });
 
-        if (response.status === "completed" || response.status === "quote_selected") {
+        if (response.status === "completed" || response.status === "quote_selected" || response.status === "validated") {
           // 명언 선택 완료 처리 (최우선)
           if (response.quote && !response.quote_selection?.active) {
             console.log("✅ 명언 선택 완료:", response.quote);
@@ -206,7 +206,7 @@ export const useChat = () => {
             }, 2000); // 2초 후 이동
           }
           // 명언 선택 모드 처리 (다음 명언 제시)
-          else if (response.quote_selection?.active && response.quote) {
+          else if (response.quote_selection?.active) {
             console.log("🔄 명언 선택 모드 활성화:", response.quote_selection);
             console.log("📝 새로운 명언 내용:", response.content);
             
@@ -314,7 +314,7 @@ export const useChat = () => {
               userId,
               threadNum,
               (statusResponse) => {
-                if (statusResponse.status === "completed" || statusResponse.status === "quote_selected") {
+                if (statusResponse.status === "completed" || statusResponse.status === "quote_selected" || statusResponse.status === "validated") {
                   // 명언 선택 완료 처리 (최우선)
                   if (statusResponse.quote && !statusResponse.quote_selection?.active) {
                     console.log("✅ 명언 선택 완료 (폴링):", statusResponse.quote);
@@ -349,7 +349,7 @@ export const useChat = () => {
                     }, 2000); // 2초 후 이동
                   }
                   // 명언 선택 모드 처리 (다음 명언 제시)
-                  else if (statusResponse.quote_selection?.active && statusResponse.quote) {
+                  else if (statusResponse.quote_selection?.active) {
                     console.log("🔄 명언 선택 모드 활성화 (폴링):", statusResponse.quote_selection);
                     console.log("📝 새로운 명언 내용 (폴링):", statusResponse.content);
                     

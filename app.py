@@ -408,9 +408,12 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
             **state,
             "current_quote_index": next_index,
             "chatbot_message": message,
+            "quote": next_quote["quote"],  # 현재 명언 정보 포함
+            "author": next_quote["author"],  # 현재 명언 저자 포함
             "quote_selection_mode": True,
             "quote_selection_complete": False,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "status": "validated"
         }
     
     else:
@@ -423,9 +426,12 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
         return {
             **state,
             "chatbot_message": message,
+            "quote": current_quote["quote"],  # 현재 명언 정보 포함
+            "author": current_quote["author"],  # 현재 명언 저자 포함
             "quote_selection_mode": True,
             "quote_selection_complete": False,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "status": "validated"
         }
 
 # === 분기 엣지 정의 ===
