@@ -17,9 +17,19 @@ export interface Quote {
 
 export interface ChatState {
   messages: ChatMessage[];
-  currentStep: number;
   isLoading: boolean;
   selectedQuote?: Quote;
+  
+  // UI 상태 관리 (currentStep 대신 명확한 boolean 값들 사용)
+  isQuoteSelectionMode: boolean;    // 명언 선택 모드 (예/아니오 버튼 표시)
+  isQuoteCompleted: boolean;        // 명언 선택 완료 (결과 페이지로 이동 준비)
+  showLoadingOverlay: boolean;      // 로딩 오버레이 표시
+  showInput: boolean;               // 입력창 표시 여부
+  showConfirmButtons: boolean;      // 예/아니오 버튼 표시 여부
+  
+  // 대화 진행 상태
+  userMessageCount: number;         // 사용자 메시지 수 (20턴 제한용)
+  isAnalysisStarted: boolean;       // 대화 분석 시작 여부
 }
 
 export interface NavigationItem {

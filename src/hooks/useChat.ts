@@ -57,9 +57,19 @@ export const useChat = () => {
         timestamp: new Date(),
       },
     ],
-    currentStep: 0,
     isLoading: false,
     selectedQuote: undefined,
+    
+    // UI 상태 초기값
+    isQuoteSelectionMode: false,
+    isQuoteCompleted: false,
+    showLoadingOverlay: false,
+    showInput: true,
+    showConfirmButtons: false,
+    
+    // 대화 진행 상태 초기값
+    userMessageCount: 0,
+    isAnalysisStarted: false,
   });
 
   // API 관련 상태
@@ -133,6 +143,12 @@ export const useChat = () => {
       // 사용자 메시지 추가
       addMessage(content, false);
 
+      // 사용자 메시지 카운트 업데이트
+      setChatState((prev) => ({ 
+        ...prev, 
+        userMessageCount: prev.userMessageCount + 1 
+      }));
+
       // 로딩 상태 시작
       setChatState((prev) => ({ ...prev, isLoading: true }));
 
@@ -159,17 +175,19 @@ export const useChat = () => {
           // 명언 선택 완료 처리 (최우선)
           if (response.quote && !response.quote_selection?.active) {
             console.log("✅ 명언 선택 완료:", response.quote);
-            if (response.content) {
-              addMessage(response.content, true);
-            }
+            
+            // 즉시 LoadingOverlay 표시를 위해 상태 설정
             setChatState((prev) => ({
               ...prev,
               selectedQuote: response.quote,
-              currentStep: 10, // 완료 단계 (LoadingOverlay 표시)
-              isLoading: false, // 로딩 상태 해제
+              isQuoteCompleted: true,
+              showLoadingOverlay: true,
+              showInput: false,
+              showConfirmButtons: false,
+              isLoading: false,
             }));
             
-            // 결과 페이지로 이동
+            // 2초 후 결과 페이지로 이동
             setTimeout(() => {
               const quote = response.quote;
               if (quote) {
@@ -203,8 +221,10 @@ export const useChat = () => {
             setChatState((prev) => ({
               ...prev,
               selectedQuote: response.quote,
-              currentStep: 2, // 명언 선택 단계
-              isLoading: false, // 로딩 상태 해제
+              isQuoteSelectionMode: true,
+              showConfirmButtons: true,
+              showInput: false,
+              isLoading: false,
             }));
           }
           // 일반 대화 처리
@@ -225,14 +245,17 @@ export const useChat = () => {
               console.log("🎯 분석 단계 진입:", { userMessageCount, analysisStarted });
               setChatState((prev) => ({
                 ...prev,
-                currentStep: 10, // 분석 단계
+                isAnalysisStarted: true,
+                showLoadingOverlay: true,
+                showInput: false,
                 isLoading: false,
               }));
             } else {
-              // 일반 대화에서는 currentStep을 증가시키지 않음 (20턴까지 입력 가능)
+              // 일반 대화에서는 입력창 계속 표시
               setChatState((prev) => ({
                 ...prev,
-                isLoading: false, // 로딩 상태 해제
+                showInput: true,
+                isLoading: false,
               }));
             }
           }
@@ -295,17 +318,19 @@ export const useChat = () => {
                   // 명언 선택 완료 처리 (최우선)
                   if (statusResponse.quote && !statusResponse.quote_selection?.active) {
                     console.log("✅ 명언 선택 완료 (폴링):", statusResponse.quote);
-                    if (statusResponse.content) {
-                      addMessage(statusResponse.content, true);
-                    }
+                    
+                    // 즉시 LoadingOverlay 표시를 위해 상태 설정
                     setChatState((prev) => ({
                       ...prev,
                       selectedQuote: statusResponse.quote,
-                      currentStep: 10, // 완료 단계 (LoadingOverlay 표시)
-                      isLoading: false, // 로딩 상태 해제
+                      isQuoteCompleted: true,
+                      showLoadingOverlay: true,
+                      showInput: false,
+                      showConfirmButtons: false,
+                      isLoading: false,
                     }));
                     
-                    // 결과 페이지로 이동
+                    // 2초 후 결과 페이지로 이동
                     setTimeout(() => {
                       const quote = statusResponse.quote;
                       if (quote) {
@@ -339,8 +364,10 @@ export const useChat = () => {
                     setChatState((prev) => ({
                       ...prev,
                       selectedQuote: statusResponse.quote,
-                      currentStep: 2, // 명언 선택 단계
-                      isLoading: false, // 로딩 상태 해제
+                      isQuoteSelectionMode: true,
+                      showConfirmButtons: true,
+                      showInput: false,
+                      isLoading: false,
                     }));
                   }
                   // 일반 대화 처리
@@ -361,14 +388,17 @@ export const useChat = () => {
                       console.log("🎯 분석 단계 진입 (폴링):", { userMessageCount, analysisStarted });
                       setChatState((prev) => ({
                         ...prev,
-                        currentStep: 10, // 분석 단계
+                        isAnalysisStarted: true,
+                        showLoadingOverlay: true,
+                        showInput: false,
                         isLoading: false,
                       }));
                     } else {
-                      // 일반 대화에서는 currentStep을 증가시키지 않음 (20턴까지 입력 가능)
+                      // 일반 대화에서는 입력창 계속 표시
                       setChatState((prev) => ({
                         ...prev,
-                        isLoading: false, // 로딩 상태 해제
+                        showInput: true,
+                        isLoading: false,
                       }));
                     }
                   }
@@ -395,10 +425,10 @@ export const useChat = () => {
         if (process.env.NODE_ENV === "development") {
           // 대화 단계에 따른 적절한 응답 제공
           setTimeout(() => {
-            const currentStep = chatState.currentStep;
+            const userMessageCount = chatState.userMessageCount;
             let botResponse = "";
 
-            switch (currentStep) {
+            switch (userMessageCount) {
               case 0:
                 botResponse = `${content}에 대해 말씀해주셔서 감사합니다. 더 자세히 들려주실 수 있나요?`;
                 break;
@@ -463,6 +493,9 @@ export const useChat = () => {
                         setChatState((prev) => ({
                           ...prev,
                           selectedQuote: selectedQuote,
+                          isQuoteSelectionMode: true,
+                          showConfirmButtons: true,
+                          showInput: false,
                         }));
                       }, 1000);
                     }, 1000);
@@ -470,17 +503,21 @@ export const useChat = () => {
                 }, 500);
                 break;
               default:
-                if (currentStep < 9) {
+                if (userMessageCount < 9) {
                   botResponse = "네, 계속 이야기해주세요. 잘 듣고 있어요.";
                 } else {
                   botResponse = "답변을 생성하고 있습니다...";
                 }
             }
 
-            if (currentStep < 9) {
+            if (userMessageCount < 9) {
               addMessage(botResponse, true);
             }
-            setChatState((prev) => ({ ...prev, isLoading: false }));
+            setChatState((prev) => ({ 
+              ...prev, 
+              isLoading: false,
+              userMessageCount: prev.userMessageCount + 1
+            }));
           }, 1500);
         } else {
           // 프로덕션 환경에서는 에러 메시지만 표시
@@ -499,7 +536,7 @@ export const useChat = () => {
       // }));
     },
     [
-      chatState.currentStep,
+      chatState.userMessageCount,
       chatState.isLoading,
       addMessage,
       updateLastBotMessage,
@@ -553,9 +590,19 @@ export const useChat = () => {
           timestamp: new Date(),
         },
       ],
-      currentStep: 0,
       isLoading: false,
       selectedQuote: undefined,
+      
+      // UI 상태 초기값
+      isQuoteSelectionMode: false,
+      isQuoteCompleted: false,
+      showLoadingOverlay: false,
+      showInput: true,
+      showConfirmButtons: false,
+      
+      // 대화 진행 상태 초기값
+      userMessageCount: 0,
+      isAnalysisStarted: false,
     });
   }, []);
 
