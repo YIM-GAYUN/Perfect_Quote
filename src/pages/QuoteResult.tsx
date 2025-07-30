@@ -1,557 +1,286 @@
-import React from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import styled from "styled-components";
+import React, { useRef, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import styled, { css } from "styled-components";
 import Layout from "../components/Layout/Layout";
+import { theme } from "../styles/theme";
+import quoteGrid from "../assets/quote_grid.png";
+import clover from "../assets/clover.png";
+import logoMain from "../assets/logo-main.png";
 
-interface QuoteResult {
-  date: string;
-  dayOfWeek: string;
-  quote: string;
-  author: string;
-  keywords: string[];
-  context: string;
-}
+// 카드 비율: 54mm x 86mm (약 1:1.59)
+// px로 환산: 540px x 860px (예시, 필요시 조정)
+const CARD_WIDTH = 500;
+const CARD_HEIGHT = 820;
 
 const QuoteResultContainer = styled.div`
   position: relative;
   width: 100vw;
   height: 100vh;
+  min-width: 1200px;
+  min-height: 900px;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: none;
 `;
 
 const BlurredBackground = styled.div`
-  position: absolute;
-  top: 130px;
-  left: 0;
+  position: fixed;
+  inset: 0;
   width: 100vw;
-  height: calc(100vh - 130px);
-  background: url("/src/assets/background-1.png") center/cover;
-  filter: blur(9.5px);
+  height: 100vh;
+  filter: blur(10px);
   z-index: 1;
 `;
 
-const OutputPaper = styled.div`
-  position: absolute;
-  top: 168px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 650px;
-  height: 812px;
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.5);
+const Card = styled.div`
+  position: relative;
+  width: ${CARD_WIDTH}px;
+  height: ${CARD_HEIGHT}px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 0 24px 0 rgba(0,0,0,0.13);
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+  margin-left: -400px;    // 왼쪽으로 이동
+  margin-top: -140px;     // 위쪽 마진을 조금 작게
 `;
 
-const PaperBackground = styled.div`
+const DateRow = styled.div`
+  position: relative;
+  width: 85%;
+  margin: 0 auto;
+  margin-top: 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const BlueLine = styled.div<{ top?: boolean }>`
   position: absolute;
-  top: 46px;
-  left: 45px;
-  width: 562px;
-  height: 729px;
+  left: 1%;
+  right: 1%;
+  height: 4px;
+  opacity: 0.5;
+  background: ${theme.colors.primary};
+  border-radius: 2px;
+  ${(props) =>
+    props.top
+      ? css`
+          top: 0;
+        `
+      : css`
+          bottom: 0;
+        `}
 `;
 
-// 날짜 부분 배경 (위아래 선) - 피그마: 날짜 그룹
-const DateBackground = styled.div`
+const DateText = styled.div`
+  font-family: ${theme.fonts.korean.date};
+  font-size: 2.0rem;
+  color: #3a4a7c;
+  margin-left: 30px;
+`;
+
+const DayText = styled.div`
+  font-family: ${theme.fonts.korean.date};
+  font-size: 1.95rem;
+  color: #3a4a7c;
+  margin-right: 30px;
+`;
+
+const QuoteGridWrapper = styled.div`
+  position: relative;
+  width: 430px;
+  margin: 0 auto;
+  margin-top: 18px;
+  height: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+`;
+
+const QuoteGridImg = styled.img`
   position: absolute;
   top: 0;
   left: 0;
-  width: 562px;
-  height: 82px;
-
-  /* 상단선 */
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: #6490ff;
-  }
-
-  /* 하단선 */
-  &::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: #6490ff;
-  }
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  pointer-events: none;
 `;
 
-// 명언 부분 배경 (격자) - 피그마: 명언 그룹
-const QuoteBackground = styled.div`
-  position: absolute;
-  top: 82px;
-  left: 0;
-  width: 560px;
-  height: 210px;
-
-  /* 가로선들 - 35px 간격 */
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 2px;
-    width: 558px;
-    height: 100%;
-    background-image: 
-      /* Line 3 - y: 0 */ linear-gradient(
-        to bottom,
-        #eaf0ff 0px,
-        #eaf0ff 2px,
-        transparent 2px,
-        transparent 35px
-      ),
-      /* Line 4 - y: 35 */
-        linear-gradient(
-          to bottom,
-          transparent 35px,
-          #eaf0ff 35px,
-          #eaf0ff 37px,
-          transparent 37px,
-          transparent 70px
-        ),
-      /* Line 5 - y: 70 */
-        linear-gradient(
-          to bottom,
-          transparent 70px,
-          #eaf0ff 70px,
-          #eaf0ff 72px,
-          transparent 72px,
-          transparent 105px
-        ),
-      /* Line 6 - y: 105 */
-        linear-gradient(
-          to bottom,
-          transparent 105px,
-          #eaf0ff 105px,
-          #eaf0ff 107px,
-          transparent 107px,
-          transparent 140px
-        ),
-      /* Line 7 - y: 140 */
-        linear-gradient(
-          to bottom,
-          transparent 140px,
-          #eaf0ff 140px,
-          #eaf0ff 142px,
-          transparent 142px,
-          transparent 175px
-        ),
-      /* Line 8 - y: 175 */
-        linear-gradient(
-          to bottom,
-          transparent 175px,
-          #eaf0ff 175px,
-          #eaf0ff 177px,
-          transparent 177px,
-          transparent 210px
-        ),
-      /* Line 9 - y: 210 */
-        linear-gradient(
-          to bottom,
-          transparent 210px,
-          #eaf0ff 210px,
-          #eaf0ff 212px,
-          transparent 212px
-        );
-    background-size: 100% 210px;
-    background-repeat: no-repeat;
-  }
-
-  /* 세로선들 - 35px 간격 */
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 210px;
-    background-image: 
-      /* Line 38 - x: 0 */ linear-gradient(
-        to right,
-        #eaf0ff 0px,
-        #eaf0ff 2px,
-        transparent 2px,
-        transparent 35px
-      ),
-      /* Line 22 - x: 35 */
-        linear-gradient(
-          to right,
-          transparent 35px,
-          #eaf0ff 35px,
-          #eaf0ff 37px,
-          transparent 37px,
-          transparent 70px
-        ),
-      /* Line 23 - x: 70 */
-        linear-gradient(
-          to right,
-          transparent 70px,
-          #eaf0ff 70px,
-          #eaf0ff 72px,
-          transparent 72px,
-          transparent 105px
-        ),
-      /* Line 24 - x: 105 */
-        linear-gradient(
-          to right,
-          transparent 105px,
-          #eaf0ff 105px,
-          #eaf0ff 107px,
-          transparent 107px,
-          transparent 140px
-        ),
-      /* Line 25 - x: 140 */
-        linear-gradient(
-          to right,
-          transparent 140px,
-          #eaf0ff 140px,
-          #eaf0ff 142px,
-          transparent 142px,
-          transparent 175px
-        ),
-      /* 나머지 세로선들 */
-        linear-gradient(
-          to right,
-          transparent 175px,
-          #eaf0ff 175px,
-          #eaf0ff 177px,
-          transparent 177px,
-          transparent 210px
-        ),
-      linear-gradient(
-        to right,
-        transparent 210px,
-        #eaf0ff 210px,
-        #eaf0ff 212px,
-        transparent 212px,
-        transparent 245px
-      ),
-      linear-gradient(
-        to right,
-        transparent 245px,
-        #eaf0ff 245px,
-        #eaf0ff 247px,
-        transparent 247px,
-        transparent 280px
-      ),
-      linear-gradient(
-        to right,
-        transparent 280px,
-        #eaf0ff 280px,
-        #eaf0ff 282px,
-        transparent 282px,
-        transparent 315px
-      ),
-      linear-gradient(
-        to right,
-        transparent 315px,
-        #eaf0ff 315px,
-        #eaf0ff 317px,
-        transparent 317px,
-        transparent 350px
-      ),
-      linear-gradient(
-        to right,
-        transparent 350px,
-        #eaf0ff 350px,
-        #eaf0ff 352px,
-        transparent 352px,
-        transparent 385px
-      ),
-      linear-gradient(
-        to right,
-        transparent 385px,
-        #eaf0ff 385px,
-        #eaf0ff 387px,
-        transparent 387px,
-        transparent 420px
-      ),
-      linear-gradient(
-        to right,
-        transparent 420px,
-        #eaf0ff 420px,
-        #eaf0ff 422px,
-        transparent 422px,
-        transparent 455px
-      ),
-      linear-gradient(
-        to right,
-        transparent 455px,
-        #eaf0ff 455px,
-        #eaf0ff 457px,
-        transparent 457px,
-        transparent 490px
-      ),
-      linear-gradient(
-        to right,
-        transparent 490px,
-        #eaf0ff 490px,
-        #eaf0ff 492px,
-        transparent 492px,
-        transparent 525px
-      ),
-      linear-gradient(
-        to right,
-        transparent 525px,
-        #eaf0ff 525px,
-        #eaf0ff 527px,
-        transparent 527px,
-        transparent 560px
-      ),
-      linear-gradient(
-        to right,
-        transparent 560px,
-        #eaf0ff 560px,
-        #eaf0ff 562px,
-        transparent 562px
-      );
-    background-size: 560px 100%;
-    background-repeat: no-repeat;
-  }
-`;
-
-// 키워드 부분 배경 (세로선 + 가로선들) - 피그마: 키워드 그룹
-const KeywordBackground = styled.div`
-  position: absolute;
-  top: 339px;
-  left: 2px;
-  width: 558px;
-  height: 390px;
-
-  /* 가로선들 - 39px 간격 */
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: linear-gradient(
-        to bottom,
-        #eaf0ff 0px,
-        #eaf0ff 2px,
-        transparent 2px,
-        transparent 39px
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 39px,
-        #eaf0ff 39px,
-        #eaf0ff 41px,
-        transparent 41px,
-        transparent 78px
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 78px,
-        #eaf0ff 78px,
-        #eaf0ff 80px,
-        transparent 80px,
-        transparent 117px
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 117px,
-        #eaf0ff 117px,
-        #eaf0ff 119px,
-        transparent 119px,
-        transparent 156px
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 156px,
-        #eaf0ff 156px,
-        #eaf0ff 158px,
-        transparent 158px,
-        transparent 195px
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 195px,
-        #eaf0ff 195px,
-        #eaf0ff 197px,
-        transparent 197px,
-        transparent 234px
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 234px,
-        #eaf0ff 234px,
-        #eaf0ff 236px,
-        transparent 236px,
-        transparent 273px
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 273px,
-        #eaf0ff 273px,
-        #eaf0ff 275px,
-        transparent 275px,
-        transparent 312px
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 312px,
-        #eaf0ff 312px,
-        #eaf0ff 314px,
-        transparent 314px,
-        transparent 351px
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 351px,
-        #eaf0ff 351px,
-        #eaf0ff 353px,
-        transparent 353px,
-        transparent 390px
-      ),
-      linear-gradient(
-        to bottom,
-        transparent 390px,
-        #eaf0ff 390px,
-        #eaf0ff 392px,
-        transparent 392px
-      );
-    background-size: 100% 390px;
-    background-repeat: no-repeat;
-  }
-
-  /* 세로선 - x: 103 */
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 103px;
-    width: 2px;
-    height: 383px;
-    background: #eaf0ff;
-  }
-`;
-
-const TextContainer = styled.div`
-  position: absolute;
-  top: 7px;
-  left: 21px;
-  width: 518px;
-  height: 683px;
-  color: #4a4e57;
-  z-index: 3;
-`;
-
-// 날짜 텍스트 - 위아래 선 사이 중앙에 위치
-const DateText = styled.div`
-  position: absolute;
-  top: 7px; /* (82 - 67) / 2 = 7.5px, 대략 8px으로 조정하여 선 사이 중앙에 위치 */
-  left: 0;
-  width: 518px;
-  height: 67px;
-  font-family: "KoreanSWGIG3R", "Malgun Gothic", serif;
-  font-size: 48px;
-  font-weight: 400;
-  line-height: 1.4;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-// 명언 텍스트 - 첫번째와 두번째 세로선 중점(52.5px)에서 시작, 두번째 가로선(35px)에서 시작
 const QuoteText = styled.div`
-  position: absolute;
-  top: 113px; /* 82 + 35 - 4 = 113px (배경 시작 + 두번째 가로선 - 약간의 오프셋) */
-  left: 52px; /* (35 + 70) / 2 = 52.5px, 대략 52px */
-  width: 479px;
-  height: 90px;
-  font-family: "KoreanSWGIG2R", "Malgun Gothic", serif;
-  font-size: 32px;
-  font-weight: 400;
-  line-height: 1.4;
+  position: relative;
+  z-index: 2;
+  width: 92%;
+  max-height: 100px;
+  margin: 18px auto 0 auto;
+  font-family: ${theme.fonts.korean.quote};
+  font-size: 1.4rem;
+  color: #3a4a7c;
   text-align: left;
   white-space: pre-line;
+  line-height: 1.5;
+  word-break: keep-all;
+  overflow: hidden;
 `;
 
-// 명언 출처 - 명언 끝나는 부분에서 격자 한 칸(35px) 띄운 위치
 const AuthorText = styled.div`
-  position: absolute;
-  top: 229px; /* 113 + 90 + 26 = 229px (명언 시작 + 명언 높이 + 격자 한 칸 정도) */
-  left: 52px; /* 명언과 같은 x 좌표 */
-  width: 114px;
-  height: 34px;
-  font-family: "KoreanSWGIG2R", "Malgun Gothic", serif;
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 1.4;
+  position: relative;
+  z-index: 2;
+  margin-top: 18px;
+  margin-left: 30px;
+  font-family: ${theme.fonts.korean.quote};
+  font-size: 1.1rem;
+  color: #3a4a7c;
   text-align: left;
+  width: 90%;
+  max-height: 25px;
 `;
 
-const KeywordContainer = styled.div`
+const KeywordRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 18px 0 0 0;
+  width: 85%;
+  gap: 10px;
+`;
+
+const KeywordHighlight = styled.div`
+  background: rgba(23, 95, 230, 0.3); // theme.colors.primary의 투명도 적용
+  padding: 6px 24px;
+  min-width: 60px;
+  max-width: 160px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  position: relative;
+`;
+
+const KeywordText = styled.div`
+  font-family: ${theme.fonts.korean.quote};
+  font-size: 1rem;
+  color: #5b5b5bff;
+  text-align: left;
+  margin-bottom: -2px;
+`;
+
+const GridSection = styled.div`
+  position: relative;
+  width: 85%;
+  height: 430px;
+  margin: 18px auto 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+`;
+
+const GridLines = styled.div`
   position: absolute;
-  top: 332px;
+  top: 0;
   left: 0;
-  width: 518px;
-  height: 351px;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.3;
+  /* 15줄 가로선 */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    ${theme.colors.primary} 0px,
+    ${theme.colors.primary} 2px,
+    transparent 2px,
+    transparent 30px
+  );
+  /* 세로선 */
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 18%;
+    width: 3px;
+    height: 98%;
+    background: ${theme.colors.primary};
+    opacity: 0.7;
+    border-radius: 2px;
+  }
 `;
 
-const KeywordItem = styled.div<{ top: number }>`
+const GridContentRow = styled.div<{ top: number }>`
   position: absolute;
+  left: 15px;
   top: ${(props) => props.top}px;
-  left: 8px;
-  width: 40px;
-  height: 28px;
-  font-family: "KoreanSWGIG2R", "Malgun Gothic", serif;
-  font-size: 20px;
-  font-weight: 400;
-  line-height: 1.4;
+  width: 80%;
+  height: 30px; // 가로선 간격과 동일하게
+  display: flex;
+  align-items: flex-start;
+  margin-left: 25px;
+`;
+
+const GridLogo = styled.img`
+  width: 22px;
+  height: 22px;
+  opacity: 0.6;
+  margin-left: -10px;
+  margin-right: 25px;
+  margin-top: 5px;
+  object-fit: contain;
+  display: block;
+`;
+
+const GridText = styled.div`
+  font-family: ${theme.fonts.korean.quote_R};
+  font-size: 1.0rem;
+  max-width: 400px;
+  color: #3a4a7c;
   text-align: left;
+  line-height: 30px;
+  word-break: keep-all;
+  margin-left: 12px;
+  margin-right: 20px;
+  margin-top: 0;
+`;
+
+const CloverImg = styled.img`
+  position: absolute;
+  right: 5px;
+  bottom: -60px;
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
   z-index: 2;
 `;
 
-const KeywordHighlight = styled.div<{ top: number }>`
-  position: absolute;
-  top: ${(props) => props.top}px;
-  left: 8px;
-  width: 93px;
-  height: 23px;
-  background: rgba(100, 144, 255, 0.5);
-  border-radius: 4px;
-  z-index: 1;
-`;
-
-const ContextText = styled.div`
-  position: absolute;
-  top: 332px;
-  left: 100px;
-  width: 374px;
-  height: 351px;
-  font-family: "KoreanSWGIG2R", "Malgun Gothic", serif;
-  font-size: 20px;
-  font-weight: 400;
-  line-height: 1.95;
-  text-align: left;
-  white-space: pre-line;
+const CopyrightText = styled.div`
+  width: 100%;
+  margin: 20px 0 0 0;
+  font-size: 0.7rem;
+  color: #c4c4c4ff;
+  text-align: center;
+  font-family: ${theme.fonts.korean.primary};
 `;
 
 const ActionButtons = styled.div`
-  position: fixed;
-  right: 280px;
-  top: 50%;
-  transform: translateY(-50%);
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
+  bottom: -150px;
+  right: -50px;
   z-index: 10;
 `;
 
 const ActionButton = styled.button`
   width: 57px;
   height: 57px;
-  background: #6490ff;
+  background: ${theme.colors.primary};
   border: none;
   border-radius: 15px;
   cursor: pointer;
@@ -620,16 +349,57 @@ const QuoteResult: React.FC = () => {
   const keywords = searchParams.get("keywords")?.split(",");
   const context = searchParams.get("context");
 
-  // 더미 데이터 (실제로는 props나 state에서 가져올 것)
-  const quoteData: QuoteResult = {
-    date: date || "20250505",
-    dayOfWeek: dayOfWeek || "MONDAY",
-    quote: quote || '"가장 어두운 밤도 결국은 끝나고,\n해는 떠오른다."',
-    author: author || "-빅터 위고",
-    keywords: keywords || ["지침", "고난", "아픔", "위로"],
-    context: context ||
-      "몸이 다친 것도 힘든데,\n마음까지 지쳐 있는 상태라면 작은 일도\n더 크게 느껴질 수 있거든요.\n넘어졌다는 사실보다,\n요즘 여러 가지로 마음이 무겁고 버티는 게\n벅찼던 거 아닐까요?\n\n당신에게 따뜻한 위로가\n될 수 있는 말을 전할게요.",
+  // 오늘 날짜와 요일 구하기
+  const today = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const dateStr = `${today.getFullYear()}${pad(today.getMonth() + 1)}${pad(today.getDate())}`;
+  const daysKor = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  const dayOfWeekStr = daysKor[today.getDay()];
+
+  // 더미 데이터 (실제로는 props나 fetch로 가져올 것)
+  const quoteData = {
+    date: dateStr,
+    dayOfWeek: dayOfWeekStr,
+    quote: '"힘내세요"',
+    author: "-빅터 위고와 여러 명의 사람들.. 기타 등등.. 매우 많음.. 테스트용......",
+    keywords: ["지침", "고난", "아픔", "위로"],
+    contextTop:
+      "몸이 다친 것도 힘든데, 마음까지 지쳐 있는 상태라면 작은 일도 더 크게 느껴질 수 있거든요. 넘어졌다는 사실보다, 요즘 여러 가지로 마음이 무겁고 버티는 게 벅찼던 거 아닐까요? 딱 맞는 말 파이팅 딱 맞는 말 파이팅 딱 맞는 말 파이팅! 딱 맞는 말 파이팅 딱 맞는 말 파이팅",
+    contextBottom: "당신에게 따뜻한 위로가 될 수 있는 말을 전할게요.",
   };
+
+  // 명언 길이에 따라 font-size 자동 조정
+  const [fontSize, setFontSize] = useState(1.4); // rem 단위
+  const quoteTextRef = useRef<HTMLDivElement>(null);
+
+  // 작가명 길이에 따라 font-size 자동 조정
+  const [authorFontSize, setAuthorFontSize] = useState(1.1); // rem 단위
+  const authorTextRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!quoteTextRef.current) return;
+    const container = quoteTextRef.current;
+    let currentFontSize = 1.4;
+    container.style.fontSize = `${currentFontSize}rem`;
+    // 반복적으로 줄이면서 height를 체크
+    while (container.scrollHeight > container.offsetHeight && currentFontSize > 0.3) {
+      currentFontSize -= 0.05;
+      container.style.fontSize = `${currentFontSize}rem`;
+    }
+    setFontSize(currentFontSize);
+  }, [quoteData.quote]);
+
+  useEffect(() => {
+    if (!authorTextRef.current) return;
+    const container = authorTextRef.current;
+    let currentFontSize = 1.1;
+    container.style.fontSize = `${currentFontSize}rem`;
+    while (container.scrollHeight > container.offsetHeight && currentFontSize > 0.3) {
+      currentFontSize -= 0.05;
+      container.style.fontSize = `${currentFontSize}rem`;
+    }
+    setAuthorFontSize(currentFontSize);
+  }, [quoteData.author]);
 
   const handleHome = () => {
     navigate("/");
@@ -647,50 +417,77 @@ const QuoteResult: React.FC = () => {
         url: window.location.href,
       });
     } else {
-      // 폴백: 클립보드에 복사
       navigator.clipboard.writeText(`${quoteData.quote}\n${quoteData.author}`);
       alert("명언이 클립보드에 복사되었습니다!");
     }
   };
 
   const handleDownload = () => {
-    // 이미지 다운로드 로직 구현 (추후 구현)
     alert("다운로드 기능은 추후 구현될 예정입니다.");
   };
 
   return (
-    <Layout>
+    <Layout currentPage="quote-result">
       <QuoteResultContainer>
         <BlurredBackground />
-        <OutputPaper>
-          <PaperBackground>
-            <DateBackground />
-            <QuoteBackground />
-            <KeywordBackground />
-          </PaperBackground>
+        <Card>
+          {/* 날짜/요일 + 파란선 */}
+          <DateRow>
+            <BlueLine top />
+            <DateText>{quoteData.date}</DateText>
+            <DayText>{quoteData.dayOfWeek}</DayText>
+            <BlueLine />
+          </DateRow>
 
-          <TextContainer>
-            <DateText>
-              {quoteData.date} {quoteData.dayOfWeek}
-            </DateText>
+           {/* 명언 그리드 + 명언 + 작가 */}
+          <QuoteGridWrapper>
+            <QuoteGridImg src={quoteGrid} alt="quote grid" />
+            <QuoteText ref={quoteTextRef} style={{ fontSize: `${fontSize}rem` }}>{quoteData.quote}</QuoteText>
+            <AuthorText ref={authorTextRef} style={{ fontSize: `${authorFontSize}rem` }}>{quoteData.author}</AuthorText>
+          </QuoteGridWrapper>
 
-            <QuoteText>{quoteData.quote}</QuoteText>
+          {/* 키워드 */}
+          <KeywordRow>
+            {quoteData.keywords.map((kw, idx) => (
+              <KeywordHighlight key={idx}>
+                <KeywordText>{kw}</KeywordText>
+              </KeywordHighlight>
+            ))}
+          </KeywordRow>
 
-            <AuthorText>{quoteData.author}</AuthorText>
+          {/* 챗봇 내용 그리드 */}
+          <GridSection>
+            <GridLines />
+            {/* 윗부분 */}
+            <GridContentRow top={0}>
+              <GridLogo src={logoMain} alt="logo" />
+              <GridText>
+                {quoteData.contextTop
+                  .split(/(?<=[.?!])/)
+                  .filter(sentence => sentence.trim() !== "")
+                  .map((sentence, idx, arr) => (
+                    <React.Fragment key={idx}>
+                      {sentence.trim()}
+                      <br />
+                    </React.Fragment>
+                  ))}
+              </GridText>
+            </GridContentRow>
+            {/* 아랫부분 (고정 위치) */}
+            <GridContentRow top={300}>
+              <GridLogo src={logoMain} alt="logo" />
+              <GridText>{quoteData.contextBottom}</GridText>
+            </GridContentRow>
+            <CloverImg src={clover} alt="clover" />
+          </GridSection>
 
-            <KeywordContainer>
-              {quoteData.keywords.map((keyword, index) => (
-                <React.Fragment key={index}>
-                  <KeywordHighlight top={index * 39} />
-                  <KeywordItem top={index * 39 + 4}>{keyword}</KeywordItem>
-                </React.Fragment>
-              ))}
+          {/* Copyright */}
+          <CopyrightText>
+            Copyright all rights reserved by 딱 맞는 말
+          </CopyrightText>
+        </Card>
 
-              <ContextText>{quoteData.context}</ContextText>
-            </KeywordContainer>
-          </TextContainer>
-        </OutputPaper>
-
+        {/* 액션 버튼들 */}
         <ActionButtons>
           <ActionButton onClick={handleHome}>
             <HomeIcon />

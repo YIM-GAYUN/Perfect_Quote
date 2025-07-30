@@ -171,7 +171,17 @@ const Header: React.FC<HeaderProps> = ({ currentPage = "quote-generator" }) => {
 
       <Navigation>
         {navigationItems.map((item) => {
-          if (item.label === "소개") {
+          if (item.label === "나를 위한 한마디") {
+            return (
+              <NavItem
+                key={item.path}
+                $isActive={isCurrentPath(item.path) || currentPage === "quote-result"}
+                onClick={() => handleNavClick(item.path)}
+              >
+                {item.label}
+              </NavItem>
+            );
+          } else if (item.label === "소개") {
             return (
               <div key={item.path} style={{ position: "relative" }} ref={aboutDropdownRef}>
                 <NavItem
