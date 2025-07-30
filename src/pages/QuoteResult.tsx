@@ -155,9 +155,9 @@ const KeywordRow = styled.div`
 
 const KeywordHighlight = styled.div`
   background: rgba(23, 95, 230, 0.3); // theme.colors.primary의 투명도 적용
-  padding: 6px 24px;
-  min-width: 60px;
-  max-width: 160px;
+  padding: 6px 12px;
+  min-width: 6px;
+  max-width: 200px;
   height: 24px;
   display: flex;
   align-items: center;
@@ -166,9 +166,9 @@ const KeywordHighlight = styled.div`
 
 const KeywordText = styled.div`
   font-family: ${theme.fonts.korean.quote};
-  font-size: 1rem;
+  font-size: 0.87rem;
   color: #5b5b5bff;
-  text-align: left;
+  text-align: center;
   margin-bottom: -2px;
 `;
 
@@ -217,7 +217,7 @@ const GridContentRow = styled.div<{ top: number }>`
   position: absolute;
   left: 15px;
   top: ${(props) => props.top}px;
-  width: 80%;
+  width: 90%;
   height: 30px; // 가로선 간격과 동일하게
   display: flex;
   align-items: flex-start;
@@ -356,15 +356,14 @@ const QuoteResult: React.FC = () => {
   const daysKor = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
   const dayOfWeekStr = daysKor[today.getDay()];
 
-  // 더미 데이터 (실제로는 props나 fetch로 가져올 것)
+  // URL 파라미터에서 받은 실제 데이터 사용
   const quoteData = {
-    date: dateStr,
-    dayOfWeek: dayOfWeekStr,
-    quote: '"힘내세요"',
-    author: "-빅터 위고와 여러 명의 사람들.. 기타 등등.. 매우 많음.. 테스트용......",
-    keywords: ["지침", "고난", "아픔", "위로"],
-    contextTop:
-      "몸이 다친 것도 힘든데, 마음까지 지쳐 있는 상태라면 작은 일도 더 크게 느껴질 수 있거든요. 넘어졌다는 사실보다, 요즘 여러 가지로 마음이 무겁고 버티는 게 벅찼던 거 아닐까요? 딱 맞는 말 파이팅 딱 맞는 말 파이팅 딱 맞는 말 파이팅! 딱 맞는 말 파이팅 딱 맞는 말 파이팅",
+    date: date || dateStr,
+    dayOfWeek: dayOfWeek || dayOfWeekStr,
+    quote: quote || '"힘내세요"',
+    author: author || "-빅터 위고",
+    keywords: keywords || ["지침", "고난", "아픔", "위로"],
+    contextTop: context || "당신의 이야기를 들려주셔서 감사합니다. 당신의 경험과 감정이 소중하다는 것을 잊지 마세요.",
     contextBottom: "당신에게 따뜻한 위로가 될 수 있는 말을 전할게요.",
   };
 
