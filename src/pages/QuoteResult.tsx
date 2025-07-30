@@ -6,6 +6,7 @@ import { theme } from "../styles/theme";
 import quoteGrid from "../assets/quote_grid.png";
 import clover from "../assets/clover.png";
 import logoMain from "../assets/logo-main.png";
+import html2canvas from "html2canvas";
 
 // 카드 비율: 54mm x 86mm (약 1:1.59)
 // px로 환산: 540px x 860px (예시, 필요시 조정)
@@ -375,6 +376,8 @@ const QuoteResult: React.FC = () => {
   const [authorFontSize, setAuthorFontSize] = useState(1.1); // rem 단위
   const authorTextRef = useRef<HTMLDivElement>(null);
 
+  const cardRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!quoteTextRef.current) return;
     const container = quoteTextRef.current;
@@ -421,15 +424,21 @@ const QuoteResult: React.FC = () => {
     }
   };
 
-  const handleDownload = () => {
-    alert("다운로드 기능은 추후 구현될 예정입니다.");
+  const handleDownload = async () => {
+    if (!cardRef.current) return;
+    const canvas = await html2canvas(cardRef.current, { backgroundColor: null });
+    const dataUrl = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = "quote_card.png";
+    link.click();
   };
 
   return (
     <Layout currentPage="quote-result">
       <QuoteResultContainer>
         <BlurredBackground />
-        <Card>
+        <Card ref={cardRef}>
           {/* 날짜/요일 + 파란선 */}
           <DateRow>
             <BlueLine top />
