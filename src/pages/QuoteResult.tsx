@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import styled, { css } from "styled-components";
 import Layout from "../components/Layout/Layout";
 import { theme } from "../styles/theme";
