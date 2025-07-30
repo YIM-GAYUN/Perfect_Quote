@@ -140,13 +140,20 @@ class LLMChainBuilder:
         """조언 및 키워드 생성용 체인"""
         llm = cls._init_llm()
         prompt = ChatPromptTemplate.from_messages([
-            ("system", ANALYSIS_PROMPT + "\n\n분석 결과를 바탕으로 다음 두 가지를 제공해줘요.:\n1. 사용자에게 적절한 조언을 해줘요. 사용자에게는 '당신, 그대'라는 2인칭 표현을 사용해요. (최대 세 문장, 문학적이고 감성적인 어투를 사용하여 친절하게 제공해줘요.)\n2. 대화 내용의 키워드 (최대 5개, 쉼표로 구분)\n\n형식:\n조언: [조언 내용]\n키워드: [키워드1, 키워드2, 키워드3]"),
+            ("system", ANALYSIS_PROMPT + "\n\n분석 결과를 바탕으로 다음 두 가지를 제공해줘요.:\n1. 사용자에게 적절한 조언을 해줘요. 사용자에게는 '당신, 그대'라는 2인칭 표현을 사용해요. (최대 세 문장, 문학적이고 감성적인 어투를 사용하여 친절하게 제공해줘요.)\n2. 대화 내용의 키워드 (최대 5개, 쉼표로 구분. 각 키워드의 글자 수는 최대 4자 이내이다. 5자 초과는 금지이다.)\n\n형식:\n조언: [조언 내용]\n키워드: [키워드1, 키워드2, 키워드3]"),
             ("user", "{chat_history}")
         ])
         return prompt | llm
 
 class QuoteManager:
     """명언 관련 기능을 담당하는 클래스"""
+    
+    @staticmethod
+    def clean_author(author_text: str) -> str:
+        """author가 '작가명, 도서명' 형태일 때 작가명만 추출"""
+        if not author_text:
+            return ""
+        return author_text.split(',')[0].strip()
     
     @staticmethod
     def select_fallback_quotes(analysis_text: str) -> List[Dict]:
@@ -208,7 +215,7 @@ class QuoteManager:
     def format_quote_message(quote_data: Dict, current_index: int) -> str:
         """명언 제시 메시지 포맷팅"""
         quote_text = quote_data["quote"]
-        author_text = quote_data["author"]
+        author_text = QuoteManager.clean_author(quote_data["author"])
         similarity = quote_data.get("similarity", 0)
         
         return f"이 명언으로 결정할까요?\n\n💬 \"{quote_text}\"\n✍️ 저자: {author_text}\n📊 유사도: {similarity:.3f}\n\n(예/아니오)"
@@ -381,14 +388,14 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
     if user_input in ['예', 'yes', 'y', '네', '선택']:
         # 현재 명언 선택 확정
         selected_quote = candidate_quotes[current_index]
-        final_message = f"✨ 명언 선택이 완료되었습니다! ✨\n\n💬 \"{selected_quote['quote']}\"\n✍️ {selected_quote['author']}\n\n🎯 맞춤 조언: {state.get('advice', '')}\n\n이 명언이 당신의 마음에 위로가 되기를 바랍니다. 💝"
+        final_message = f"✨ 명언 선택이 완료되었습니다! ✨\n\n💬 \"{selected_quote['quote']}\"\n✍️ {QuoteManager.clean_author(selected_quote['author'])}\n\n🎯 맞춤 조언: {state.get('advice', '')}\n\n이 명언이 당신의 마음에 위로가 되기를 바랍니다. 💝"
         
         print(f"✅ 명언 선택 완료: {selected_quote['quote'][:50]}...")
         
         return {
             **state,
             "quote": selected_quote["quote"],
-            "author": selected_quote["author"],
+            "author": QuoteManager.clean_author(selected_quote["author"]),
             "quote_selection_complete": True,
             "quote_selection_mode": False,
             "chatbot_message": final_message,
@@ -409,7 +416,7 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
             "current_quote_index": next_index,
             "chatbot_message": message,
             "quote": next_quote["quote"],  # 현재 명언 정보 포함
-            "author": next_quote["author"],  # 현재 명언 저자 포함
+            "author": QuoteManager.clean_author(next_quote["author"]),  # 현재 명언 저자 포함
             "quote_selection_mode": True,
             "quote_selection_complete": False,
             "timestamp": datetime.now().isoformat(),
@@ -427,7 +434,7 @@ def process_quote_selection(state: ChatbotState) -> ChatbotState:
             **state,
             "chatbot_message": message,
             "quote": current_quote["quote"],  # 현재 명언 정보 포함
-            "author": current_quote["author"],  # 현재 명언 저자 포함
+            "author": QuoteManager.clean_author(current_quote["author"]),  # 현재 명언 저자 포함
             "quote_selection_mode": True,
             "quote_selection_complete": False,
             "timestamp": datetime.now().isoformat(),
@@ -725,7 +732,7 @@ def send_message():
                 response_data['quote'] = {
                     'id': str(uuid.uuid4()),
                     'text': current_quote.get('quote', ''),
-                    'author': current_quote.get('author', ''),
+                    'author': QuoteManager.clean_author(current_quote.get('author', '')),
                     'advice': result_state.get('advice', ''),
                     'keywords': result_state.get('keywords', []),
                     'method': 'langgraph_enhanced_selection'
@@ -746,7 +753,7 @@ def send_message():
             response_data['quote'] = {
                 'id': str(uuid.uuid4()),
                 'text': result_state['quote'],
-                'author': result_state['author'],
+                'author': QuoteManager.clean_author(result_state['author']),
                 'advice': result_state.get('advice', ''),
                 'keywords': result_state.get('keywords', []),
                 'method': 'langgraph_enhanced_selection'
@@ -758,7 +765,7 @@ def send_message():
                 'quote_id': str(uuid.uuid4()),
                 'changed': False
             }
-            print(f"📜 최종 명언 선택 완료: {result_state['quote'][:50]}... - {result_state['author']}")
+            print(f"📜 최종 명언 선택 완료: {result_state['quote'][:50]}... - {QuoteManager.clean_author(result_state['author'])}")
             print(f"🎯 조언: {result_state.get('advice', '')}")
             print(f"🔑 키워드: {result_state.get('keywords', [])}")
             print(f"📝 완료 응답 내용: {result_state.get('chatbot_message', '')[:100]}...")
