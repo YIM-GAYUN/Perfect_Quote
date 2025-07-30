@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout/Layout";
@@ -8,6 +8,8 @@ import ConfirmButtons from "../components/Common/ConfirmButtons";
 import LoadingOverlay from "../components/Common/LoadingOverlay";
 import { useChat } from "../hooks/useChat";
 import { theme } from "../styles/theme";
+import introImg from "../assets/figma_design_system/intro_img.gif";
+import gridBg from "../assets/bg_grid.png";
 
 const ChatContainer = styled.div`
   min-height: calc(100vh - 130px);
@@ -43,6 +45,20 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
   const { chatState, sendMessage, confirmQuote, rejectQuote } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [showIntro, setShowIntro] = useState(true);
+  const introTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // gif가 로드된 후 7초간 표시
+  const handleIntroLoad = () => {
+    if (introTimeoutRef.current) return; // 중복 방지
+    introTimeoutRef.current = setTimeout(() => setShowIntro(false), 7000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (introTimeoutRef.current) clearTimeout(introTimeoutRef.current);
+    };
+  }, []);
 
   // 디버깅을 위한 상태 로그
   useEffect(() => {
@@ -116,66 +132,113 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ onComplete }) => {
   return (
     <Layout currentPage="quote-generator">
       <ChatContainer>
-        <MessagesContainer>
-          <MessageList>
-            {chatState.messages.map((message) => {
-              const isQuoteMessage =
-                message.isBot &&
-                (message.content.includes('"') ||
-                  message.content.includes("—"));
-
-              // 빈 content이고 봇 메시지면 로딩 애니메이션 표시
-              const isLoadingMessage =
-                message.isBot && message.content.trim() === "";
-
-              return (
-                <ChatBubble
-                  key={message.id}
-                  message={message}
-                  isQuote={isQuoteMessage}
-                  isLoading={isLoadingMessage}
-                  showTimestamp={false}
-                />
-              );
-            })}
-
-            {/* 로딩 중일 때 로딩 버블 표시 */}
-            {chatState.isLoading && !chatState.showLoadingOverlay && (
-              <ChatBubble
-                message={{
-                  id: "loading",
-                  content: "",
-                  isBot: true,
-                  timestamp: new Date(),
-                }}
-                isLoading={true}
-              />
-            )}
-
-            {/* 명언 선택 확인 버튼 */}
-            {shouldShowConfirmButtons() && (
-              <ConfirmButtons
-                onConfirm={handleConfirm}
-                onCancel={handleReject}
-                question="위의 명언으로 결정할까요?"
-              />
-            )}
-
-            <div ref={messagesEndRef} />
-          </MessageList>
-        </MessagesContainer>
-
-        {/* 채팅 입력창 */}
-        {shouldShowInput() && (
-          <ChatInput
-            onSend={handleSendMessage}
-            disabled={chatState.isLoading}
-            placeholder="당신의 사연을 입력해주세요."
-            autoFocus
-          />
+        {/* 인트로 오버레이: Layout과 동일하게 opacity 0.7, 배경색 없이 격자만 */}
+        {showIntro && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              width: "100vw",
+              height: "100vh",
+              zIndex: 5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              pointerEvents: "none",
+            }}
+          >
+            {/* 격자 배경만 opacity */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100vw",
+                height: "100vh",
+                background: `url(${gridBg}) center center / cover no-repeat`,
+                opacity: 0.7,
+                zIndex: 1,
+                pointerEvents: "none",
+              }}
+            />
+            {/* gif는 불투명하게 */}
+            <img
+              src={introImg}
+              alt="인트로"
+              style={{
+                width: "70vw",
+                height: "70vh",
+                objectFit: "contain",
+                zIndex: 2,
+                pointerEvents: "auto",
+              }}
+              onLoad={handleIntroLoad}
+            />
+          </div>
         )}
+        {/* 기존 메시지/입력창/버튼은 인트로가 끝난 후에만 렌더 */}
+        {!showIntro && (
+          <>
+            <MessagesContainer>
+              <MessageList>
+                {chatState.messages.map((message) => {
+                  const isQuoteMessage =
+                    message.isBot &&
+                    (message.content.includes('"') ||
+                      message.content.includes("—"));
 
-        {/* 로딩 오버레이 */}
+                  // 빈 content이고 봇 메시지면 로딩 애니메이션 표시
+                  const isLoadingMessage =
+                    message.isBot && message.content.trim() === "";
+
+                  return (
+                    <ChatBubble
+                      key={message.id}
+                      message={message}
+                      isQuote={isQuoteMessage}
+                      isLoading={isLoadingMessage}
+                      showTimestamp={false}
+                    />
+                  );
+                })}
+
+                {/* 로딩 중일 때 로딩 버블 표시 */}
+                {chatState.isLoading && !chatState.showLoadingOverlay && (
+                  <ChatBubble
+                    message={{
+                      id: "loading",
+                      content: "",
+                      isBot: true,
+                      timestamp: new Date(),
+                    }}
+                    isLoading={true}
+                  />
+                )}
+
+                {/* 명언 선택 확인 버튼 */}
+                {shouldShowConfirmButtons() && (
+                  <ConfirmButtons
+                    onConfirm={handleConfirm}
+                    onCancel={handleReject}
+                    question="위의 명언으로 결정할까요?"
+                  />
+                )}
+
+                <div ref={messagesEndRef} />
+              </MessageList>
+            </MessagesContainer>
+
+            {/* 채팅 입력창 */}
+            {shouldShowInput() && (
+              <ChatInput
+                onSend={handleSendMessage}
+                disabled={chatState.isLoading}
+                placeholder="당신의 사연을 입력해주세요."
+                autoFocus
+              />
+            )}
+          </>
+        )}
+        {/* 로딩 오버레이는 항상 렌더 */}
         <LoadingOverlay
           isVisible={chatState.showLoadingOverlay}
           message="당신만을 위한 명언을"
