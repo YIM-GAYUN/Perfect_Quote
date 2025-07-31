@@ -2,8 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import Header from "./Header";
 import { theme } from "../../styles/theme";
-import background1 from "../../assets/background-1.png";
-import background2 from "../../assets/background-2.png";
+import background from "../../assets/bg_grid.png";
 
 const LayoutContainer = styled.div`
   min-height: 100vh;
@@ -16,46 +15,15 @@ const BackgroundContainer = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   z-index: -1;
-  display: flex;
-`;
-
-const BackgroundImageTop = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 50%;
-  background-image: url(${background1});
-  background-size: cover;
+  pointer-events: none;
+  background-image: url(${background});
+  background-size: cover; // 또는 contain, repeat 등 패턴에 맞게
   background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.25;
-  z-index: -2;
-
-  @media (max-width: ${theme.breakpoints.mobile}) {
-    opacity: 0.2;
-  }
-`;
-
-const BackgroundImageBottom = styled.div`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 50%;
-  background-image: url(${background2});
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.25;
-  z-index: -2;
-
-  @media (max-width: ${theme.breakpoints.mobile}) {
-    opacity: 0.2;
-  }
+  background-repeat: cover;
+  opacity: 0.7;
 `;
 
 const ContentArea = styled.main`
@@ -91,8 +59,6 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, showBackground =
     <LayoutContainer>
       {showBackground && (
         <BackgroundContainer>
-          <BackgroundImageTop />
-          <BackgroundImageBottom />
         </BackgroundContainer>
       )}
 

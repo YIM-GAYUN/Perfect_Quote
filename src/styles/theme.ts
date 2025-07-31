@@ -30,6 +30,9 @@ export const theme = {
       light: "Freesentation-3Light, system-ui, sans-serif",
       bold: "Freesentation-7Bold, system-ui, sans-serif",
       header: "a시월구일1, 시월구일, KoreanSWGI, SWGI, system-ui, sans-serif",
+      quote_R: "a시월구일굴림1, 시월구일, KoreanSWGI, SWGI, system-ui, sans-serif",
+      quote: "a시월구일굴림2, 시월구일, KoreanSWGI, SWGI, system-ui, sans-serif",
+      date: "a시월구일굴림3, 시월구일, KoreanSWGI, SWGI, system-ui, sans-serif",
       chatbot: "Pretendard-Regular, system-ui, sans-serif",
     },
     english: {
@@ -85,6 +88,24 @@ export const globalStyles = `
     @font-face {
     font-family: 'a시월구일3';
     src: url('/fonts/a시월구일3.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'a시월구일굴림1';
+    src: url('/fonts/a시월구일굴림1.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'a시월구일굴림2';
+    src: url('/fonts/a시월구일굴림2.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'a시월구일굴림3';
+    src: url('/fonts/a시월구일굴림3.otf') format('opentype');
     font-weight: normal;
     font-style: normal;
   }

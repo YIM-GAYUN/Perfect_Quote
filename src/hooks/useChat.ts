@@ -57,9 +57,19 @@ export const useChat = () => {
         timestamp: new Date(),
       },
     ],
-    currentStep: 0,
     isLoading: false,
     selectedQuote: undefined,
+    
+    // UI 상태 초기값
+    isQuoteSelectionMode: false,
+    isQuoteCompleted: false,
+    showLoadingOverlay: false,
+    showInput: true,
+    showConfirmButtons: false,
+    
+    // 대화 진행 상태 초기값
+    userMessageCount: 0,
+    isAnalysisStarted: false,
   });
 
   // API 관련 상태
@@ -133,6 +143,12 @@ export const useChat = () => {
       // 사용자 메시지 추가
       addMessage(content, false);
 
+      // 사용자 메시지 카운트 업데이트
+      setChatState((prev) => ({ 
+        ...prev, 
+        userMessageCount: prev.userMessageCount + 1 
+      }));
+
       // 로딩 상태 시작
       setChatState((prev) => ({ ...prev, isLoading: true }));
 
@@ -147,20 +163,105 @@ export const useChat = () => {
 
         const response = await apiSendMessage(request);
 
-        if (response.status === "completed") {
-          // 즉시 완료된 경우
-          if (response.content) {
-            addMessage(response.content, true);
-          }
-          if (response.quote) {
-            const quoteMessage = `${response.quote.text} — ${response.quote.author}`;
-            addMessage(quoteMessage, true);
+        console.log("📡 API 응답 받음:", {
+          status: response.status,
+          hasQuote: !!response.quote,
+          hasQuoteSelection: !!response.quote_selection,
+          quoteSelectionActive: response.quote_selection?.active,
+          content: response.content?.substring(0, 50) + "..."
+        });
+
+        if (response.status === "completed" || response.status === "quote_selected" || response.status === "validated") {
+          // 명언 선택 완료 처리 (최우선)
+          if (response.quote && !response.quote_selection?.active) {
+            console.log("✅ 명언 선택 완료:", response.quote);
+            
+            // 즉시 LoadingOverlay 표시를 위해 상태 설정
             setChatState((prev) => ({
               ...prev,
               selectedQuote: response.quote,
+              isQuoteCompleted: true,
+              showLoadingOverlay: true,
+              showInput: false,
+              showConfirmButtons: false,
+              isLoading: false,
+            }));
+            
+            // 2초 후 결과 페이지로 이동
+            setTimeout(() => {
+              const quote = response.quote;
+              if (quote) {
+                const params = new URLSearchParams({
+                  date: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+                  dayOfWeek: new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase(),
+                  quote: quote.text,
+                  author: quote.author,
+                  keywords: quote.keywords?.join(',') || '',
+                  context: quote.advice || ''
+                });
+                window.location.href = `/result?${params.toString()}`;
+              } else {
+                window.location.href = '/result';
+              }
+            }, 2000); // 2초 후 이동
+          }
+          // 명언 선택 모드 처리 (다음 명언 제시)
+          else if (response.quote_selection?.active) {
+            console.log("🔄 명언 선택 모드 활성화:", response.quote_selection);
+            console.log("📝 새로운 명언 내용:", response.content);
+            
+            // AI 응답을 봇 메시지로 추가 (content가 있으면)
+            if (response.content) {
+              console.log("✅ addMessage 호출:", response.content.substring(0, 50) + "...");
+              addMessage(response.content, true); // 봇 응답으로 추가
+            } else {
+              console.log("⚠️ response.content가 없음 - 명언 선택 모드에서 응답 없음");
+            }
+            
+            setChatState((prev) => ({
+              ...prev,
+              selectedQuote: response.quote,
+              isQuoteSelectionMode: true,
+              showConfirmButtons: true,
+              showInput: false,
+              isLoading: false,
             }));
           }
-          setChatState((prev) => ({ ...prev, isLoading: false }));
+          // 일반 대화 처리
+          else {
+            // 일반 대화에서는 AI 응답 추가
+            if (response.content) {
+              addMessage(response.content, true);
+            }
+            
+            // 대화 턴 수 계산 (사용자 메시지 수)
+            const userMessageCount = chatState.messages.filter(msg => !msg.isBot).length;
+            
+            // 백엔드에서 분석이 시작되었는지 확인 (analysis_complete 또는 advice가 있으면)
+            const analysisStarted = response.analysis_complete || response.advice;
+            
+            // 20턴에 도달했거나 분석이 시작되었는지 확인
+            if (userMessageCount >= 20 || analysisStarted) {
+              console.log("🎯 분석 단계 진입:", { userMessageCount, analysisStarted });
+              setChatState((prev) => ({
+                ...prev,
+                isAnalysisStarted: true,
+                showLoadingOverlay: true,
+                showInput: false,
+                isLoading: false,
+              }));
+            } else {
+              // 일반 대화에서는 입력창 계속 표시
+              setChatState((prev) => ({
+                ...prev,
+                showInput: true,
+                isLoading: false,
+              }));
+            }
+          }
+          
+          // isLoading은 각 조건에서 개별적으로 처리
+          // setChatState((prev) => ({ ...prev, isLoading: false }));
         } else if (response.status === "pending") {
           // pending 상태: 스트리밍 또는 폴링 시작
           if (API_CONFIG.enableStreaming) {
@@ -213,19 +314,97 @@ export const useChat = () => {
               userId,
               threadNum,
               (statusResponse) => {
-                if (statusResponse.status === "completed") {
-                  if (statusResponse.content) {
-                    addMessage(statusResponse.content, true);
-                  }
-                  if (statusResponse.quote) {
-                    const quoteMessage = `${statusResponse.quote.text} — ${statusResponse.quote.author}`;
-                    addMessage(quoteMessage, true);
+                if (statusResponse.status === "completed" || statusResponse.status === "quote_selected" || statusResponse.status === "validated") {
+                  // 명언 선택 완료 처리 (최우선)
+                  if (statusResponse.quote && !statusResponse.quote_selection?.active) {
+                    console.log("✅ 명언 선택 완료 (폴링):", statusResponse.quote);
+                    
+                    // 즉시 LoadingOverlay 표시를 위해 상태 설정
                     setChatState((prev) => ({
                       ...prev,
                       selectedQuote: statusResponse.quote,
+                      isQuoteCompleted: true,
+                      showLoadingOverlay: true,
+                      showInput: false,
+                      showConfirmButtons: false,
+                      isLoading: false,
+                    }));
+                    
+                    // 2초 후 결과 페이지로 이동
+                    setTimeout(() => {
+                      const quote = statusResponse.quote;
+                      if (quote) {
+                        const params = new URLSearchParams({
+                          date: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+                          dayOfWeek: new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase(),
+                          quote: quote.text,
+                          author: quote.author,
+                          keywords: quote.keywords?.join(',') || '',
+                          context: quote.advice || ''
+                        });
+                        window.location.href = `/result?${params.toString()}`;
+                      } else {
+                        window.location.href = '/result';
+                      }
+                    }, 2000); // 2초 후 이동
+                  }
+                  // 명언 선택 모드 처리 (다음 명언 제시)
+                  else if (statusResponse.quote_selection?.active) {
+                    console.log("🔄 명언 선택 모드 활성화 (폴링):", statusResponse.quote_selection);
+                    console.log("📝 새로운 명언 내용 (폴링):", statusResponse.content);
+                    
+                    // AI 응답을 봇 메시지로 추가 (content가 있으면)
+                    if (statusResponse.content) {
+                      console.log("✅ addMessage 호출 (폴링):", statusResponse.content.substring(0, 50) + "...");
+                      addMessage(statusResponse.content, true); // 봇 응답으로 추가
+                    } else {
+                      console.log("⚠️ statusResponse.content가 없음 - 명언 선택 모드에서 응답 없음 (폴링)");
+                    }
+                    
+                    setChatState((prev) => ({
+                      ...prev,
+                      selectedQuote: statusResponse.quote,
+                      isQuoteSelectionMode: true,
+                      showConfirmButtons: true,
+                      showInput: false,
+                      isLoading: false,
                     }));
                   }
-                  setChatState((prev) => ({ ...prev, isLoading: false }));
+                  // 일반 대화 처리
+                  else {
+                    // 일반 대화에서는 AI 응답 추가
+                    if (statusResponse.content) {
+                      addMessage(statusResponse.content, true);
+                    }
+                    
+                    // 대화 턴 수 계산 (사용자 메시지 수)
+                    const userMessageCount = chatState.messages.filter(msg => !msg.isBot).length;
+                    
+                    // 백엔드에서 분석이 시작되었는지 확인 (analysis_complete 또는 advice가 있으면)
+                    const analysisStarted = statusResponse.analysis_complete || statusResponse.advice;
+                    
+                    // 20턴에 도달했거나 분석이 시작되었는지 확인
+                    if (userMessageCount >= 20 || analysisStarted) {
+                      console.log("🎯 분석 단계 진입 (폴링):", { userMessageCount, analysisStarted });
+                      setChatState((prev) => ({
+                        ...prev,
+                        isAnalysisStarted: true,
+                        showLoadingOverlay: true,
+                        showInput: false,
+                        isLoading: false,
+                      }));
+                    } else {
+                      // 일반 대화에서는 입력창 계속 표시
+                      setChatState((prev) => ({
+                        ...prev,
+                        showInput: true,
+                        isLoading: false,
+                      }));
+                    }
+                  }
+                  
+                  // isLoading은 각 조건에서 개별적으로 처리
+                  // setChatState((prev) => ({ ...prev, isLoading: false }));
                 }
               },
               (error) => {
@@ -246,10 +425,10 @@ export const useChat = () => {
         if (process.env.NODE_ENV === "development") {
           // 대화 단계에 따른 적절한 응답 제공
           setTimeout(() => {
-            const currentStep = chatState.currentStep;
+            const userMessageCount = chatState.userMessageCount;
             let botResponse = "";
 
-            switch (currentStep) {
+            switch (userMessageCount) {
               case 0:
                 botResponse = `${content}에 대해 말씀해주셔서 감사합니다. 더 자세히 들려주실 수 있나요?`;
                 break;
@@ -314,6 +493,9 @@ export const useChat = () => {
                         setChatState((prev) => ({
                           ...prev,
                           selectedQuote: selectedQuote,
+                          isQuoteSelectionMode: true,
+                          showConfirmButtons: true,
+                          showInput: false,
                         }));
                       }, 1000);
                     }, 1000);
@@ -321,17 +503,21 @@ export const useChat = () => {
                 }, 500);
                 break;
               default:
-                if (currentStep < 9) {
+                if (userMessageCount < 9) {
                   botResponse = "네, 계속 이야기해주세요. 잘 듣고 있어요.";
                 } else {
                   botResponse = "답변을 생성하고 있습니다...";
                 }
             }
 
-            if (currentStep < 9) {
+            if (userMessageCount < 9) {
               addMessage(botResponse, true);
             }
-            setChatState((prev) => ({ ...prev, isLoading: false }));
+            setChatState((prev) => ({ 
+              ...prev, 
+              isLoading: false,
+              userMessageCount: prev.userMessageCount + 1
+            }));
           }, 1500);
         } else {
           // 프로덕션 환경에서는 에러 메시지만 표시
@@ -343,14 +529,14 @@ export const useChat = () => {
         }
       }
 
-      // 단계 증가 (성공/실패 여부와 관계없이)
-      setChatState((prev) => ({
-        ...prev,
-        currentStep: prev.currentStep + 1,
-      }));
+      // 단계 증가는 명언 선택 모드에서 수동으로 관리됨
+      // setChatState((prev) => ({
+      //   ...prev,
+      //   currentStep: prev.currentStep + 1,
+      // }));
     },
     [
-      chatState.currentStep,
+      chatState.userMessageCount,
       chatState.isLoading,
       addMessage,
       updateLastBotMessage,
@@ -404,9 +590,19 @@ export const useChat = () => {
           timestamp: new Date(),
         },
       ],
-      currentStep: 0,
       isLoading: false,
       selectedQuote: undefined,
+      
+      // UI 상태 초기값
+      isQuoteSelectionMode: false,
+      isQuoteCompleted: false,
+      showLoadingOverlay: false,
+      showInput: true,
+      showConfirmButtons: false,
+      
+      // 대화 진행 상태 초기값
+      userMessageCount: 0,
+      isAnalysisStarted: false,
     });
   }, []);
 
