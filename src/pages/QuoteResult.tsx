@@ -167,7 +167,7 @@ const KeywordHighlight = styled.div`
 
 const KeywordText = styled.div`
   font-family: ${theme.fonts.korean.quote};
-  font-size: 0.87rem;
+  font-size: 1rem;
   color: #5b5b5bff;
   text-align: center;
   margin-bottom: -2px;
@@ -183,6 +183,31 @@ const GridSection = styled.div`
   justify-content: flex-start;
 `;
 
+// 가로선을 위한 개별 컴포넌트
+const HorizontalLine = styled.div<{ top: number }>`
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: ${theme.colors.primary};
+  top: ${(props) => props.top}px;
+  opacity: 0.3;
+  pointer-events: none;
+`;
+
+// 세로선을 위한 개별 컴포넌트
+const VerticalLine = styled.div`
+  position: absolute;
+  top: 0;
+  left: 18%;
+  width: 3px;
+  height: 98%;
+  background: ${theme.colors.primary};
+  opacity: 0.7;
+  border-radius: 2px;
+  pointer-events: none;
+`;
+
 const GridLines = styled.div`
   position: absolute;
   top: 0;
@@ -191,27 +216,6 @@ const GridLines = styled.div`
   height: 100%;
   z-index: 1;
   pointer-events: none;
-  opacity: 0.3;
-  /* 15줄 가로선 */
-  background-image: repeating-linear-gradient(
-    to bottom,
-    ${theme.colors.primary} 0px,
-    ${theme.colors.primary} 2px,
-    transparent 2px,
-    transparent 30px
-  );
-  /* 세로선 */
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 18%;
-    width: 3px;
-    height: 98%;
-    background: ${theme.colors.primary};
-    opacity: 0.7;
-    border-radius: 2px;
-  }
 `;
 
 const GridContentRow = styled.div<{ top: number }>`
@@ -426,7 +430,25 @@ const QuoteResult: React.FC = () => {
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
-    const canvas = await html2canvas(cardRef.current, { backgroundColor: null });
+    
+    // html2canvas 옵션을 개선하여 CSS 배경 이미지가 제대로 캡처되도록 설정
+    const canvas = await html2canvas(cardRef.current, {
+      backgroundColor: null,
+      useCORS: true,
+      allowTaint: true,
+      scale: 2, // 고해상도로 캡처
+      logging: false,
+      width: cardRef.current.offsetWidth,
+      height: cardRef.current.offsetHeight,
+      onclone: (clonedDoc) => {
+        // 클론된 문서에서 스타일이 제대로 적용되도록 보장
+        const clonedCard = clonedDoc.querySelector('[data-testid="card"]') as HTMLElement;
+        if (clonedCard) {
+          clonedCard.style.transform = 'none';
+        }
+      }
+    });
+    
     const dataUrl = canvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.href = dataUrl;
@@ -438,7 +460,7 @@ const QuoteResult: React.FC = () => {
     <Layout currentPage="quote-result">
       <QuoteResultContainer>
         <BlurredBackground />
-        <Card ref={cardRef}>
+        <Card ref={cardRef} data-testid="card">
           {/* 날짜/요일 + 파란선 */}
           <DateRow>
             <BlueLine top />
@@ -465,7 +487,14 @@ const QuoteResult: React.FC = () => {
 
           {/* 챗봇 내용 그리드 */}
           <GridSection>
-            <GridLines />
+            <GridLines>
+              {/* 가로선들을 실제 DOM 요소로 렌더링 */}
+              {Array.from({ length: 14 }).map((_, i) => (
+                <HorizontalLine key={`horizontal-${i}`} top={i * 30} />
+              ))}
+              {/* 세로선 */}
+              <VerticalLine />
+            </GridLines>
             {/* 윗부분 */}
             <GridContentRow top={0}>
               <GridLogo src={logoMain} alt="logo" />
