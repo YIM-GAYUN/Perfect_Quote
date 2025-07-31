@@ -216,9 +216,7 @@ class QuoteManager:
         """명언 제시 메시지 포맷팅"""
         quote_text = quote_data["quote"]
         author_text = QuoteManager.clean_author(quote_data["author"])
-        similarity = quote_data.get("similarity", 0)
-        
-        return f"이 명언으로 결정할까요?\n\n💬 \"{quote_text}\"\n✍️ 저자: {author_text}\n📊 유사도: {similarity:.3f}\n\n(예/아니오)"
+        return f"이 명언으로 결정할까요?\n\n💬 \"{quote_text}\"\n✍️ 저자: {author_text}\n\n(예/아니오)"
 
 class ConversationHelper:
     """대화 관련 유틸리티 함수들"""
