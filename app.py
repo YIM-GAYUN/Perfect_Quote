@@ -146,8 +146,8 @@ class LLMChainBuilder:
         """조언 및 키워드 생성용 체인"""
         llm = cls._init_llm()
         prompt = ChatPromptTemplate.from_messages([
-            ("system", ANALYSIS_PROMPT + "\n\n분석 결과를 바탕으로 다음 두 가지를 제공해줘요.:\n1. 사용자에게 적절한 조언을 해줘요. 사용자에게는 '당신, 그대'라는 2인칭 표현을 사용해요. (최대 세 문장이며 80자 이내로, 문학적이고 감성적인 어투를 사용하여 친절하게 제공해줘요.)\n2. 대화 내용의 키워드 (최대 5개, 쉼표로 구분. 각 키워드의 글자 수는 최대 4자 이내이다. 5자 초과는 금지이다.)\n\n형식:\n조언: [조언 내용]\n키워드: [키워드1, 키워드2, 키워드3]"),
-            ("user", "{chat_history}")
+            ("system", "분석 결과를 바탕으로 다음 두 가지를 제공해줘요.:\n1. 사용자에게 적절한 조언을 해줘요. 사용자에게는 '당신, 그대'라는 2인칭 표현을 사용해요. (최대 세 문장이며 80자 이내로, 문학적이고 감성적인 어투를 사용하여 친절하게 제공해줘요.)\n2. 대화 내용의 키워드를 제공해줘요. (최대 5개, 쉼표로 구분. 각 키워드의 글자 수는 최대 4자 이내이다. 5자 초과는 금지이다.)\n\n형식:\n조언: [조언 내용]\n키워드: [키워드1, 키워드2, 키워드3]"),
+            ("user", "{analysis_result}")
         ])
         return prompt | llm
 
@@ -314,13 +314,14 @@ def save_history(state: ChatbotState) -> ChatbotState:
 def analyze_chat_history(state: ChatbotState) -> ChatbotState:
     chat_history = state["chat_history"]
 
-    # 사용자가 종료 명령어를 입력했는지 확인
-    user_input = state.get("user_message", "").strip().lower()
-    is_quit_command = ConversationHelper.is_quit_command(user_input)
+    # should_analyze_chat_history와 완전히 중복되는 내용이므로 삭제 - 0801 다훈
+    # # 사용자가 종료 명령어를 입력했는지 확인
+    # user_input = state.get("user_message", "").strip().lower()
+    # is_quit_command = ConversationHelper.is_quit_command(user_input)
     
-    # 대화 턴 수가 TURN_THRESHOLD 이상이거나 종료 명령어가 입력된 경우에만 분석을 진행
-    if len(chat_history.messages) < TURN_THRESHOLD and not is_quit_command:
-        raise ValueError(f"Chat history must be at least {TURN_THRESHOLD} messages")
+    # # 대화 턴 수가 TURN_THRESHOLD 이상이거나 종료 명령어가 입력된 경우에만 분석을 진행
+    # if len(chat_history.messages) < TURN_THRESHOLD and not is_quit_command:
+    #     raise ValueError(f"Chat history must be at least {TURN_THRESHOLD} messages")
     
     # 분석 체인을 생성하고 실행한다.
     analysis_chain = LLMChainBuilder.build_analysis_chain()
@@ -338,7 +339,7 @@ def generate_advice(state: ChatbotState) -> ChatbotState:
     chain = LLMChainBuilder.build_advice_chain()
 
     chat_analysis = state["chat_analysis"]
-    result = chain.invoke({"chat_history": chat_analysis})
+    result = chain.invoke({"analysis_result": chat_analysis})
     
     # 응답 텍스트 파싱
     advice, keywords = ConversationHelper.parse_advice_response(str(result.content))
@@ -452,24 +453,31 @@ def should_analyze_chat_history(state: ChatbotState) -> str:
     user_input = state.get("user_message", "").strip().lower()
     
     if ConversationHelper.is_quit_command(user_input):
-        return f"messages >= {TURN_THRESHOLD}"
+        return "analyze"
     
-    if len(state["chat_history"].messages) >= TURN_THRESHOLD:
-        return f"messages >= {TURN_THRESHOLD}"
-    else:
-        return f"messages < {TURN_THRESHOLD}"
+    # 챗봇의 마지막 메시지 확인
+    chat_history = state["chat_history"]
+    if chat_history.messages:
+        # 마지막 메시지가 AI 메시지인지 확인하고 내용 체크
+        last_message = chat_history.messages[-1]
+        if isinstance(last_message, AIMessage):
+            last_chatbot_message = last_message.content.strip()
+            if "당신을 위한 명언을 생성할게요." in last_chatbot_message:
+                return "analyze"
+    
+    return "keep_conversation"
 
 def should_continue_quote_selection(state: ChatbotState) -> str:
     """명언 선택을 계속할지 결정하는 분기 함수"""
     # 명언 선택이 완료되었는지 확인
     if state.get("quote_selection_complete", False):
-        return "quote_selection_complete"
+        return "quote_selection_complete" # 사용자가 3개의 명언 중 선택을 완료한 상황이다.
     
     # candidate_quotes가 있고 quote_selection_mode가 True인 경우
     candidate_quotes = state.get("candidate_quotes", [])
     quote_selection_mode = state.get("quote_selection_mode", False)
     
-    if candidate_quotes and quote_selection_mode:
+    if candidate_quotes and quote_selection_mode: # quote_selection_mode는 이 함수가 호출되는 시점엔 항상 True이므로 조건문 추가 안해도 됨(하지만 그냥 추가해 놓음)
         # 현재 명언 인덱스 확인
         current_index = state.get("current_quote_index", 0)
         
@@ -520,8 +528,8 @@ workflow.add_conditional_edges(
     "save_history",
     should_analyze_chat_history,
     path_map={
-        f"messages >= {TURN_THRESHOLD}": "analyze_chat_history",
-        f"messages < {TURN_THRESHOLD}": END
+        "analyze": "analyze_chat_history",
+        "keep_conversation": END
     }
 )
 
