@@ -183,36 +183,43 @@ const GridSection = styled.div`
   justify-content: flex-start;
 `;
 
-const GridLines = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.3;
-  /* 15줄 가로선 */
-  background-image: repeating-linear-gradient(
-    to bottom,
-    ${theme.colors.primary} 0px,
-    ${theme.colors.primary} 2px,
-    transparent 2px,
-    transparent 30px
-  );
-  /* 세로선 */
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 18%;
-    width: 3px;
-    height: 98%;
-    background: ${theme.colors.primary};
-    opacity: 0.7;
-    border-radius: 2px;
-  }
-`;
+const GridLinesSVG: React.FC = () => (
+  <svg
+    width="100%"
+    height="100%"
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      zIndex: 1,
+      pointerEvents: "none",
+      opacity: 0.3,
+    }}
+  >
+    {/* 가로줄 15개 */}
+    {Array.from({ length: 15 }).map((_, i) => (
+      <line
+        key={i}
+        x1="0"
+        x2="100%"
+        y1={2 + i * 30}
+        y2={2 + i * 30}
+        stroke="#175fe6"
+        strokeWidth="2"
+      />
+    ))}
+    {/* 세로줄 1개 (18% 위치) */}
+    <rect
+      x="18%"
+      y="0"
+      width="3"
+      height="98%"
+      fill="#175fe6"
+      opacity="0.7"
+      rx="2"
+    />
+  </svg>
+);
 
 const GridContentRow = styled.div<{ top: number }>`
   position: absolute;
@@ -465,7 +472,7 @@ const QuoteResult: React.FC = () => {
 
           {/* 챗봇 내용 그리드 */}
           <GridSection>
-            <GridLines />
+            <GridLinesSVG />
             {/* 윗부분 */}
             <GridContentRow top={0}>
               <GridLogo src={logoMain} alt="logo" />
