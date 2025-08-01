@@ -1,0 +1,64 @@
+---
+alwaysApply: true
+---
+# Conda Quote 환경 사용 규칙
+
+## 🎯 핵심 규칙
+
+- **모든 Python 실행은 반드시 conda quote 환경에서 해야 한다**
+- 서버 시작, 모델 다운로드, 테스트 등 모든 Python 작업은 quote 환경에서 수행
+- base 환경이나 다른 환경에서 실행 금지
+
+## 📋 환경 활성화 방법
+
+```bash
+# quote 환경 활성화
+conda activate quote
+
+# 환경 확인
+conda info --envs
+```
+
+## 🔧 주요 작업들
+
+### 1. 서버 시작
+```bash
+conda activate quote
+python app.py
+```
+
+### 2. 모델 다운로드
+```bash
+conda activate quote
+python download_models.py
+```
+
+### 3. 임베딩 테스트
+```bash
+conda activate quote
+python -c "from utils.quote_retriever import find_similar_quote_cosine_silent; result = find_similar_quote_cosine_silent('테스트', top_k=3); print(result)"
+```
+
+### 4. 패키지 설치
+```bash
+conda activate quote
+pip install sentence-transformers faiss-cpu
+```
+
+## ⚠️ 주의사항
+
+- base 환경에서 Python 실행 시 ModuleNotFoundError 발생 가능
+- quote 환경에 필요한 패키지들이 설치되어 있음
+- 환경 전환 없이 실행하면 의존성 문제 발생
+
+## 📁 관련 파일
+
+- 메인 서버: [app.py](mdc:app.py)
+- 모델 다운로드: [download_models.py](mdc:download_models.py)
+- 명언 검색: [utils/quote_retriever.py](mdc:utils/quote_retriever.py)
+
+## 🚫 금지 사항
+
+- base 환경에서 Python 실행 금지
+- 환경 활성화 없이 Python 명령어 실행 금지
+- 다른 conda 환경에서 실행 금지

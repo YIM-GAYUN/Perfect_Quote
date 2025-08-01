@@ -46,7 +46,7 @@ print(f".env 파일 존재: {os.path.exists('.env')}")
 
 # === 상수 정의 ===
 TURN_THRESHOLD = 20
-EMBEDDING_AVAILABLE = False
+EMBEDDING_AVAILABLE = True  # 모델이 다운로드되었으므로 True로 변경
 EMBEDDING_LOADING = False
 EMBEDDING_LIBS_AVAILABLE = True
 
@@ -108,6 +108,7 @@ class ChatbotState(TypedDict):
     current_quote_index: Annotated[int, "Current quote index being presented"]
     quote_selection_complete: Annotated[bool, "Whether quote selection is complete"]
     quote_selection_mode: Annotated[bool, "Whether in quote selection mode"]
+    is_quote_generation_ready: Annotated[bool, "Whether quote generation is ready"]
 
 # === 유틸리티 클래스 ===
 class LLMChainBuilder:
@@ -263,7 +264,7 @@ def validate_user_input(state: ChatbotState) -> ChatbotState:
     if not user_input:
         raise ValueError("User message cannot be empty")
         
-    if len(user_input) > 150:
+    if len(user_input) > 300:
         raise ValueError("User message cannot be longer than 150 characters")
     
     return {
@@ -278,17 +279,25 @@ def chatbot(state: ChatbotState) -> ChatbotState:
     if not chat_history:
         chat_history = ChatMessageHistory()
         
-    # Format chat history for prompt if needed
+    # Format chat history for prompt if needed (최근 4개 메시지만 사용)
     formatted_history = ""
     if chat_history.messages:
+        recent_messages = chat_history.messages[-4:]  # 최근 4개 메시지만 사용
         formatted_history = "\n".join([
             f"{'User' if isinstance(msg, HumanMessage) else 'Assistant'}: {msg.content}"
-            for msg in chat_history.messages[-6:]  # 최근 6개 메시지만 사용
+            for msg in recent_messages
         ])
         
     chain = LLMChainBuilder.build_chat_chain()
+    
+    # 프롬프트 구성 - 히스토리가 있으면 포함, 없으면 현재 메시지만
+    if formatted_history:
+        prompt_input = f"다음은 이전 대화입니다:\n{formatted_history}\n\n현재 사용자 메시지: {state['user_message']}"
+    else:
+        prompt_input = state["user_message"]
+    
     response = chain.invoke({
-        "user_input": f"{formatted_history}\n\nUser: {state['user_message']}" if formatted_history else state["user_message"]
+        "user_input": prompt_input
     })
 
     return {
@@ -296,6 +305,14 @@ def chatbot(state: ChatbotState) -> ChatbotState:
         "chatbot_message": str(response.content),
         "timestamp": datetime.now().isoformat(),
         "status": "completed"
+    }
+
+def set_quote_generation_ready(state: ChatbotState) -> ChatbotState:
+    """명언 생성 준비 상태를 설정하는 노드"""
+    print("🔧 set_quote_generation_ready: 명언 생성 준비 상태 설정")
+    return {
+        **state,
+        "is_quote_generation_ready": True
     }
 
 def save_history(state: ChatbotState) -> ChatbotState:
@@ -306,9 +323,14 @@ def save_history(state: ChatbotState) -> ChatbotState:
         AIMessage(content=state["chatbot_message"])
     ])
     
+    # 명언 생성 준비 상태 유지
+    is_quote_ready = state.get("is_quote_generation_ready", False)
+    print(f"🔍 save_history: is_quote_generation_ready={is_quote_ready}")
+    
     return {
         **state,
-        "chat_history": chat_history 
+        "chat_history": chat_history,
+        "is_quote_generation_ready": is_quote_ready  # 상태 명시적 유지
     }
 
 def analyze_chat_history(state: ChatbotState) -> ChatbotState:
@@ -453,18 +475,24 @@ def should_analyze_chat_history(state: ChatbotState) -> str:
     user_input = state.get("user_message", "").strip().lower()
     
     if ConversationHelper.is_quit_command(user_input):
+        print("🔍 should_analyze_chat_history: 종료 명령어 감지")
         return "analyze"
     
-    # 챗봇의 마지막 메시지 확인
-    chat_history = state["chat_history"]
-    if chat_history.messages:
-        # 마지막 메시지가 AI 메시지인지 확인하고 내용 체크
-        last_message = chat_history.messages[-1]
-        if isinstance(last_message, AIMessage):
-            last_chatbot_message = last_message.content.strip()
-            if "당신을 위한 명언을 생성할게요." in last_chatbot_message:
-                return "analyze"
+    is_quote_ready = state.get("is_quote_generation_ready", False)
+    print(f"🔍 should_analyze_chat_history: is_quote_generation_ready={is_quote_ready}")
     
+    if is_quote_ready:
+        print("🔍 should_analyze_chat_history: 명언 생성 준비 완료 → analyze")
+        return "analyze"
+    
+    # 현재 챗봇 메시지 확인 (아직 저장되지 않은 상태)
+    current_chatbot_message = state.get("chatbot_message", "").strip()
+    if "당신을 위한 명언을 생성할게요." in current_chatbot_message:
+        print("🔍 should_analyze_chat_history: 명언 생성 문구 감지 → is_quote_generation_ready=True")
+        print(f"제발 지옥같은 여기서 날 꺼내줘!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
+        return "set_quote_ready"
+    
+    print("🔍 should_analyze_chat_history: 일반 대화 → keep_conversation")
     return "keep_conversation"
 
 def should_continue_quote_selection(state: ChatbotState) -> str:
@@ -503,6 +531,7 @@ workflow = StateGraph(ChatbotState)
 workflow.add_node("validate_user_input", validate_user_input)
 workflow.add_node("chatbot", chatbot)
 workflow.add_node("save_history", save_history)
+workflow.add_node("set_quote_generation_ready", set_quote_generation_ready)
 workflow.add_node("analyze_chat_history", analyze_chat_history)
 workflow.add_node("generate_advice", generate_advice)
 workflow.add_node("present_quote", present_quote)
@@ -529,9 +558,13 @@ workflow.add_conditional_edges(
     should_analyze_chat_history,
     path_map={
         "analyze": "analyze_chat_history",
+        "set_quote_ready": "set_quote_generation_ready",
         "keep_conversation": END
     }
 )
+
+# set_quote_generation_ready 이후 END로 이동
+workflow.add_edge("set_quote_generation_ready", END)
 
 # 분석 → 조언 생성 → 명언 제시
 workflow.add_edge("analyze_chat_history", "generate_advice")
@@ -584,6 +617,7 @@ class EnhancedSolarChatbot:
             "current_quote_index": 0,
             "quote_selection_complete": False,
             "quote_selection_mode": False,
+            "is_quote_generation_ready": False,
             "chat_analysis": "",
             "keywords": [],
             "advice": ""
@@ -599,13 +633,18 @@ class EnhancedSolarChatbot:
         try:
             print(f"🔄 LangGraph 실행 시작 - User: {user_input[:30]}...")
             print(f"📊 현재 상태: quote_selection_mode={self.state.get('quote_selection_mode')}, candidate_quotes={len(self.state.get('candidate_quotes', []))}")
+            print(f"🔍 실행 전 is_quote_generation_ready={self.state.get('is_quote_generation_ready')}")
             
             # LangGraph로 모든 로직 처리
             result = graph.invoke(self.state)
+            
+            print(f"🔍 LangGraph 결과: is_quote_generation_ready={result.get('is_quote_generation_ready')}")
+            
             self.state.update(result)
             
             print(f"✅ LangGraph 실행 완료")
             print(f"📊 결과 상태: quote_selection_mode={self.state.get('quote_selection_mode')}, quote_selection_complete={self.state.get('quote_selection_complete')}")
+            print(f"🔍 업데이트 후 is_quote_generation_ready={self.state.get('is_quote_generation_ready')}")
             print(f"💬 응답: {self.state.get('chatbot_message', '')[:100]}...")
             
             # 디버그 정보 출력
@@ -847,7 +886,7 @@ def get_status():
 
 if __name__ == '__main__':
     print("🚀 Enhanced Solar API + LangGraph 서버 시작 중...")
-    print("📡 포트: 3001")
+    print("📡 포트: 3004")
     print("🔥 모델: Solar Pro API + LangGraph StateGraph")
     print("🧠 임베딩: Enhanced SentenceTransformer + FAISS")
     print("📊 명언 검색: utils.quote_retriever")
@@ -856,4 +895,4 @@ if __name__ == '__main__':
     print("🌐 CORS 활성화됨")
     print("✨ LangGraph 기반 개인화된 명언 추천 시스템!")
     
-    app.run(host='0.0.0.0', port=3001, debug=False, use_reloader=False)
+    app.run(host='0.0.0.0', port=3004, debug=False, use_reloader=False)
