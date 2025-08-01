@@ -895,4 +895,4 @@ if __name__ == '__main__':
     print("🌐 CORS 활성화됨")
     print("✨ LangGraph 기반 개인화된 명언 추천 시스템!")
     
-    app.run(host='0.0.0.0', port=3004, debug=False, use_reloader=False)
+    app.run(host='0.0.0.0', port=3001, debug=False, use_reloader=False)
