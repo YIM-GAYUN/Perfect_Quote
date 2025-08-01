@@ -6,6 +6,7 @@ import uuid
 import time
 import random
 import threading
+import os
 
 # LangGraph imports
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -15,7 +16,6 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langgraph.graph import StateGraph, START, END
 from typing import TypedDict, List, Dict, Any, Annotated, Optional
 
-import os
 from dotenv import load_dotenv
 
 # 시스템 프롬프트 import
@@ -37,6 +37,12 @@ import numpy as np
 
 # .env 파일 로드
 load_dotenv()
+
+# 환경 변수 확인 (load_dotenv() 호출 후)
+print("🔍 환경 변수 확인:")
+print(f"UPSTAGE_API_KEY: {os.getenv('UPSTAGE_API_KEY')}")
+print(f"현재 작업 디렉토리: {os.getcwd()}")
+print(f".env 파일 존재: {os.path.exists('.env')}")
 
 # === 상수 정의 ===
 TURN_THRESHOLD = 20
@@ -216,9 +222,8 @@ class QuoteManager:
         """명언 제시 메시지 포맷팅"""
         quote_text = quote_data["quote"]
         author_text = QuoteManager.clean_author(quote_data["author"])
-        similarity = quote_data.get("similarity", 0)
         
-        return f"이 명언으로 결정할까요?\n\n💬 \"{quote_text}\"\n✍️ 저자: {author_text}\n📊 유사도: {similarity:.3f}\n\n(예/아니오)"
+        return f"💬\"{quote_text}\"\n✍️ 저자: {author_text}"
 
 class ConversationHelper:
     """대화 관련 유틸리티 함수들"""
