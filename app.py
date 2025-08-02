@@ -246,8 +246,14 @@ class ConversationHelper:
             for line in lines:
                 if line.startswith('조언:'):
                     advice = line.replace('조언:', '').strip()
+                    # 앞뒤 대괄호 제거
+                    if advice.startswith('[') and advice.endswith(']'):
+                        advice = advice[1:-1].strip()
                 elif line.startswith('키워드:'):
                     keywords_text = line.replace('키워드:', '').strip()
+                    # 앞뒤 대괄호 제거
+                    if keywords_text.startswith('[') and keywords_text.endswith(']'):
+                        keywords_text = keywords_text[1:-1].strip()
                     keywords = [k.strip() for k in keywords_text.split(',')]
         except Exception:
             pass  # 기본값 사용
