@@ -41,7 +41,8 @@ const getWelcomeMessage = (): string => {
   if (isDev) {
     return `${baseMessage}
 
-💡 개발 모드에서 실행 중입니다. API 서버가 없어도 대화형 모의 응답을 제공합니다.`;
+🍀 당신의 현재 기분이나 생각, 혹은 짧은 일기를 작성해주세요.
+예시: "안녕, 오늘 인공지능 동아리 '프로메테우스'에 데모데이 체험을 하러 왔어."`;
   }
 
   return baseMessage;
