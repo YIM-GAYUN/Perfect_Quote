@@ -886,7 +886,7 @@ def get_status():
 
 if __name__ == '__main__':
     print("🚀 Enhanced Solar API + LangGraph 서버 시작 중...")
-    print("📡 포트: 3004")
+    print("📡 포트: 3001")
     print("🔥 모델: Solar Pro API + LangGraph StateGraph")
     print("🧠 임베딩: Enhanced SentenceTransformer + FAISS")
     print("📊 명언 검색: utils.quote_retriever")
@@ -895,4 +895,4 @@ if __name__ == '__main__':
     print("🌐 CORS 활성화됨")
     print("✨ LangGraph 기반 개인화된 명언 추천 시스템!")
     
-    app.run(host='0.0.0.0', port=3004, debug=False, use_reloader=False)
+    app.run(host='0.0.0.0', port=3001, debug=False, use_reloader=False)
