@@ -3,7 +3,21 @@
 > **개인화된 AI 명언 추천 서비스**  
 > Solar Pro API + 임베딩 기반 유사도 검색으로 사용자 맞춤 명언을 제공합니다.
 
-## 🏗️ **시스템 아키텍처**
+## **시연 영상 및 결과 화면**
+시연 영상: https://youtu.be/w3tfPC9rD4s
+
+<img width="1919" height="1079" alt="스크린샷 2025-08-26 232454" src="https://github.com/user-attachments/assets/cecad72f-a62c-4eb8-8b36-ddece3fc200e" />
+<img width="1919" height="1079" alt="스크린샷 2025-08-26 232402" src="https://github.com/user-attachments/assets/72c3526a-a4de-4242-a563-3f24c74f1b79" />
+<img width="1919" height="1079" alt="스크린샷 2025-08-26 232203" src="https://github.com/user-attachments/assets/e98e2135-e481-46cb-8030-de8a7051bf8a" />
+<img width="1919" height="1079" alt="스크린샷 2025-08-26 232151" src="https://github.com/user-attachments/assets/727923df-05bc-47df-84c1-92f12dd4b43e" />
+<img width="1919" height="1079" alt="스크린샷 2025-08-26 232209" src="https://github.com/user-attachments/assets/d775be44-d3ce-4f68-91e6-809deaa0cf3a" />
+<img width="1919" height="1073" alt="스크린샷 2025-08-26 232216" src="https://github.com/user-attachments/assets/72990100-e986-4bd4-a5c8-316117093aae" />
+<img width="1919" height="1074" alt="스크린샷 2025-08-26 232226" src="https://github.com/user-attachments/assets/d2e81082-73c7-4bcb-8e5f-e807dd761c42" />
+<img width="1919" height="1079" alt="스크린샷 2025-08-26 232232" src="https://github.com/user-attachments/assets/1bc2e176-6ebd-4028-9b35-1d06f28a376d" />
+
+
+
+## **시스템 아키텍처**
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -104,6 +118,7 @@ graph LR
 - **Python 3.8+ (3.11 권장)**
 - **Node.js 16+ (18 LTS 권장)**
 - **Upstage API Key** ([https://console.upstage.ai](https://console.upstage.ai)에서 발급)
+- **master 브랜치에서 실행할 것**
 
 ### **⚠️ 중요 알림**
 팀원들이 자주 겪는 문제들을 미리 방지하기 위한 가이드입니다. 순서대로 따라하시면 문제없이 실행됩니다.
@@ -485,40 +500,6 @@ quote-generator-v2/
 - **실시간 응답**: WebSocket 지원 준비
 - **다국어 지원**: 한국어/영어 동시 지원
 
-## 🔧 **개발 가이드**
-
-### **🏗️ 아키텍처 확장**
-
-1. **스트리밍 API**: Server-Sent Events 구현
-2. **사용자 인증**: JWT 기반 세션 관리
-3. **데이터베이스**: PostgreSQL/MongoDB 연동
-4. **캐싱**: Redis 기반 응답 캐싱
-5. **모니터링**: Prometheus + Grafana
-
-### **🧪 테스트**
-
-```bash
-# 백엔드 테스트
-python -m pytest tests/
-
-# 프론트엔드 테스트
-npm test
-
-# E2E 테스트
-npm run test:e2e
-```
-
-### **🚀 배포**
-
-```bash
-# Docker 빌드
-docker-compose up -d
-
-# 또는 개별 배포
-# Backend: Heroku/AWS Lambda
-# Frontend: Vercel/Netlify
-# Vector DB: AWS S3/GCS
-```
 
 ## 📈 **성능 지표**
 
@@ -529,28 +510,6 @@ docker-compose up -d
 | **동시 사용자**   | 100+ | 테스트 중 |
 | **시스템 가용성** | 99%+ | 개발 단계 |
 
-## 🔮 **로드맵**
-
-### **🎯 단기 목표 (1-2개월)**
-
-- [ ] 사용자 피드백 시스템
-- [ ] 명언 카테고리 필터링
-- [ ] 대화 히스토리 저장
-- [ ] 모바일 반응형 최적화
-
-### **🚀 중기 목표 (3-6개월)**
-
-- [ ] 다국어 명언 데이터 확장
-- [ ] 실시간 스트리밍 응답
-- [ ] 소셜 공유 기능
-- [ ] 개인화 대시보드
-
-### **🌟 장기 목표 (6-12개월)**
-
-- [ ] 음성 대화 지원
-- [ ] 이미지 명언 생성
-- [ ] 커뮤니티 기능
-- [ ] 모바일 앱 출시
 
 ## ⚡ **빠른 시작 체크리스트**
 
@@ -662,36 +621,6 @@ git push origin feature/your-feature-name
 - `refactor:` 코드 리팩토링
 - `test:` 테스트 추가/수정
 
-### **🎯 역할 분담**
-- **백엔드**: `app.py`, `utils/` 폴더 담당
-- **프론트엔드**: `src/` 폴더 담당  
-- **AI/ML**: `vectorDB/`, 모델 최적화 담당
-- **DevOps**: 배포, 환경설정, 문서화 담당
-
-### **🔄 개발 프로세스**
-1. **이슈 생성**: GitHub Issues에서 작업 내용 명시
-2. **브랜치 생성**: 이슈 번호를 포함한 브랜치명 사용
-3. **개발**: 로컬에서 기능 개발 및 테스트
-4. **PR 생성**: 상세한 설명과 함께 Pull Request
-5. **코드 리뷰**: 팀원 검토 후 머지
-
-## 📄 **라이센스**
-
-이 프로젝트는 MIT 라이센스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
-
-## 👥 **팀**
-
-- **백엔드 & AI/ML**: 데이터 파이프라인, 임베딩 시스템
-- **프론트엔드**: React UI/UX, 사용자 경험
-- **DevOps**: 배포, 모니터링, 인프라
-
-## 📞 **문의**
-
-- **이슈**: [GitHub Issues](https://github.com/your-repo/issues)
-- **이메일**: team@quoteai.com
-- **문서**: [API 가이드](./API_SPECIFICATION.md)
-
----
 
 > 💡 **"가장 어두운 밤도 결국은 끝나고, 해는 떠오른다."** - 빅터 위고  
 > 이 프로젝트가 여러분의 하루에 작은 위로와 영감을 전해드리길 바랍니다. ✨
