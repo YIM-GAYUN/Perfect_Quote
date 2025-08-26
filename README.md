@@ -4,7 +4,7 @@
 > Solar Pro API + 임베딩 기반 유사도 검색으로 사용자 맞춤 명언을 제공합니다.
 
 ## **시연 영상 및 결과 화면**
-시연 영상: https://youtu.be/w3tfPC9rD4s
+시연 영상: https://youtu.be/Q7mlh2kMOg4
 
 <img width="1919" height="1079" alt="스크린샷 2025-08-26 232454" src="https://github.com/user-attachments/assets/cecad72f-a62c-4eb8-8b36-ddece3fc200e" />
 <img width="1919" height="1079" alt="스크린샷 2025-08-26 232402" src="https://github.com/user-attachments/assets/72c3526a-a4de-4242-a563-3f24c74f1b79" />
