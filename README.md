@@ -8,6 +8,7 @@
 
 <img width="1919" height="1079" alt="스크린샷 2025-08-26 232454" src="https://github.com/user-attachments/assets/cecad72f-a62c-4eb8-8b36-ddece3fc200e" />
 <img width="1919" height="1079" alt="스크린샷 2025-08-26 232402" src="https://github.com/user-attachments/assets/72c3526a-a4de-4242-a563-3f24c74f1b79" />
+<img width="1919" height="1079" alt="스크린샷 2025-08-26 232133" src="https://github.com/user-attachments/assets/cca70669-880d-4af9-b94e-832b3c90b182" />
 <img width="1919" height="1079" alt="스크린샷 2025-08-26 232203" src="https://github.com/user-attachments/assets/e98e2135-e481-46cb-8030-de8a7051bf8a" />
 <img width="1919" height="1079" alt="스크린샷 2025-08-26 232151" src="https://github.com/user-attachments/assets/727923df-05bc-47df-84c1-92f12dd4b43e" />
 <img width="1919" height="1079" alt="스크린샷 2025-08-26 232209" src="https://github.com/user-attachments/assets/d775be44-d3ce-4f68-91e6-809deaa0cf3a" />
