@@ -111,7 +111,7 @@ graph LR
 | **📊 데이터**   | 500K+ 명언 + 인사이트       | GPT 기반 의미 추출                   |
 | **💾 벡터DB**   | FAISS IndexFlatIP           | 29MB 인덱스, GPU 가속                |
 
-## 🚀 **환경 설정 및 실행 가이드**
+## **환경 설정 및 실행 가이드**
 
 ### **필수 요구사항**
 
@@ -120,7 +120,7 @@ graph LR
 - **Upstage API Key** ([https://console.upstage.ai](https://console.upstage.ai)에서 발급)
 - **master 브랜치에서 실행할 것**
 
-### **⚠️ 중요 알림**
+### **⚠ 중요 알림**
 팀원들이 자주 겪는 문제들을 미리 방지하기 위한 가이드입니다. 순서대로 따라하시면 문제없이 실행됩니다.
 
 ---
@@ -192,7 +192,7 @@ node --version
 npm --version
 ```
 
-**❌ 만약 "명령어를 찾을 수 없다" 오류 발생 시:**
+**만약 "명령어를 찾을 수 없다" 오류 발생 시:**
 
 **Windows:**
 - [Node.js 공식 사이트](https://nodejs.org)에서 LTS 버전 다운로드
@@ -234,9 +234,9 @@ npm start
 
 ## **6️⃣ 접속 및 테스트**
 
-- **🌐 웹 앱**: http://localhost:3000
-- **🤖 API 서버**: http://localhost:3001  
-- **🔍 헬스체크**: http://localhost:3001/api/health
+- **웹 앱**: http://localhost:3000
+- **API 서버**: http://localhost:3001  
+- **헬스체크**: http://localhost:3001/api/health
 
 ### **API 테스트**
 ```bash
@@ -258,9 +258,9 @@ Invoke-WebRequest -Uri "http://localhost:3001/api/health" -Method GET
 
 ---
 
-## 🚨 **문제 해결 가이드**
+## **문제 해결 가이드**
 
-### **❌ 자주 발생하는 문제들**
+### **자주 발생하는 문제들**
 
 #### **1. .env 파일 인코딩 오류**
 ```
@@ -338,7 +338,7 @@ ConnectionError: HTTPSConnectionPool
 - 로컬 모델이 로드되지 않아도 기본 명언 시스템으로 작동
 - 성능 향상을 위해 `python download_models.py` 실행 권장
 
-### **🔍 디버깅 명령어**
+### **디버깅 명령어**
 
 #### **환경 확인**
 ```bash
@@ -373,7 +373,7 @@ python app.py
 python app.py --debug
 ```
 
-### **📞 도움 요청 시 제공할 정보**
+### **도움 요청 시 제공할 정보**
 
 문제 발생 시 다음 정보를 함께 제공해주세요:
 
@@ -388,13 +388,13 @@ python app.py --debug
 
 ## 📚 **API 명세**
 
-### **🔗 기본 정보**
+### **기본 정보**
 
 - **Base URL**: `http://localhost:3001/api`
 - **Content-Type**: `application/json`
 - **CORS**: 활성화
 
-### **💬 메시지 전송**
+### **메시지 전송**
 
 ```http
 POST /api/chat/send
@@ -430,13 +430,13 @@ Content-Type: application/json
 }
 ```
 
-### **🔍 상태 확인**
+### **상태 확인**
 
 ```http
 GET /api/chat/status?userId={userId}&threadNum={threadNum}
 ```
 
-## 🧠 **임베딩 시스템 상세**
+## **임베딩 시스템 상세**
 
 ### **📊 데이터 파이프라인**
 
@@ -478,7 +478,7 @@ quote-generator-v2/
     └── Insight_extractor_with_gpt_API/ # GPT 인사이트 추출
 ```
 
-## 🎯 **특장점**
+## **특장점**
 
 ### **🤖 고도화된 AI 시스템**
 
@@ -511,7 +511,7 @@ quote-generator-v2/
 | **시스템 가용성** | 99%+ | 개발 단계 |
 
 
-## ⚡ **빠른 시작 체크리스트**
+## **빠른 시작 체크리스트**
 
 팀원들을 위한 한 눈에 보는 체크리스트입니다:
 
@@ -612,15 +612,6 @@ git commit -m "feat: 새로운 기능 추가"
 git push origin feature/your-feature-name
 # GitHub에서 Pull Request 생성
 ```
-
-### **📝 커밋 메시지 규칙**
-- `feat:` 새로운 기능 추가
-- `fix:` 버그 수정  
-- `docs:` 문서 수정
-- `style:` 코드 스타일 변경
-- `refactor:` 코드 리팩토링
-- `test:` 테스트 추가/수정
-
 
 > 💡 **"가장 어두운 밤도 결국은 끝나고, 해는 떠오른다."** - 빅터 위고  
 > 이 프로젝트가 여러분의 하루에 작은 위로와 영감을 전해드리길 바랍니다. ✨
